@@ -1,0 +1,19 @@
+{
+  "servers": {
+    "duneAnalytics": {
+      "type": "stdio",
+      "command": "${workspaceFolder}/tools/dune-analytics-mcp/.venv/bin/python",
+      "args": ["${workspaceFolder}/tools/dune-analytics-mcp/main.py"],
+      "envFile": "${workspaceFolder}/tools/dune-analytics-mcp/.env",
+      "sandboxEnabled": true,
+      "sandbox": {
+        "network": {
+          "allowedDomains": ["api.dune.com"]
+        },
+        "filesystem": {
+          "allowWrite": ["${workspaceFolder}"]
+        }
+      }
+    }
+  }
+}
