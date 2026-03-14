@@ -2,10 +2,10 @@
 
 ## Feature 01: Project Bootstrap
 
-- [ ] Initialize Next.js app with TypeScript and App Router
-- [ ] Add core dependencies: chart.js, react-chartjs-2, three, @react-three/fiber, @tanstack/react-query, zod
-- [ ] Add linting, formatting, and strict tsconfig rules
-- [ ] Add environment schema validation on startup
+- [x] Initialize Next.js app with TypeScript and App Router
+- [x] Add core dependencies: chart.js, react-chartjs-2, three, @react-three/fiber, @tanstack/react-query, zod
+- [x] Add linting, formatting, and strict tsconfig rules
+- [x] Add environment schema validation on startup
 
 ## Feature 02: API Foundation
 
