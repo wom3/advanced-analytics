@@ -9,10 +9,10 @@
 
 ## Feature 02: API Foundation
 
-- [ ] Create API namespace under /api/v1
-- [ ] Add shared response envelope and error envelope utilities
-- [ ] Add request id middleware and basic structured logging
-- [ ] Add API rate limiting guard for public endpoints
+- [x] Create API namespace under /api/v1
+- [x] Add shared response envelope and error envelope utilities
+- [x] Add request id middleware and basic structured logging
+- [x] Add API rate limiting guard for public endpoints
 
 ## Feature 03: Dune Adapter
 
