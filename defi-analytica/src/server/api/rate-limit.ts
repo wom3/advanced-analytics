@@ -17,6 +17,14 @@ type Hit = {
   resetAt: number;
 };
 
+/**
+ * In-memory, per-instance rate-limit store.
+ *
+ * Notes / limitations:
+ * - State is reset on restarts, deploys, and cold starts.
+ * - In multi-instance deployments this is not a global limit.
+ * - For strong guarantees, replace with a shared store (e.g. Redis/Upstash).
+ */
 const store = new Map<string, Hit>();
 
 const PUBLIC_BUCKET: BucketConfig = {
@@ -37,11 +45,21 @@ function cleanupExpired(now: number): void {
 }
 
 function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0]?.trim() || "unknown";
+  const requestWithIp = request as NextRequest & { ip?: string };
+  if (requestWithIp.ip && requestWithIp.ip.trim().length > 0) {
+    return requestWithIp.ip;
   }
-  return request.headers.get("x-real-ip") ?? "unknown";
+
+  // Only trust forwarded headers when an upstream reverse proxy is configured.
+  if (process.env["TRUST_PROXY_HEADERS"] === "true") {
+    const forwarded = request.headers.get("x-forwarded-for");
+    if (forwarded) {
+      return forwarded.split(",")[0]?.trim() || "unknown";
+    }
+    return request.headers.get("x-real-ip") ?? "unknown";
+  }
+
+  return "unknown";
 }
 
 export function publicRateLimitKey(request: NextRequest): string {

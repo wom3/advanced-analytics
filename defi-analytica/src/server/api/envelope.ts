@@ -14,11 +14,13 @@ export type ApiError = {
   code: string;
   message: string;
   retryable: boolean;
+  provider: string;
 };
 
 type SuccessInput<T> = {
   source: string;
   data: T;
+  asOf?: string;
   freshnessSec?: number;
   meta?: Meta;
   status?: number;
@@ -35,7 +37,7 @@ export const REQUEST_ID_HEADER = "x-request-id";
 export function successEnvelope<T>(input: SuccessInput<T>): ApiSuccess<T> {
   return {
     source: input.source,
-    asOf: new Date().toISOString(),
+    asOf: input.asOf ?? new Date().toISOString(),
     freshnessSec: input.freshnessSec ?? 0,
     data: input.data,
     meta: input.meta ?? {},
@@ -47,6 +49,7 @@ export function errorEnvelope(input: ApiError): ApiError {
     code: input.code,
     message: input.message,
     retryable: input.retryable,
+    provider: input.provider,
   };
 }
 

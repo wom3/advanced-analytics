@@ -12,11 +12,30 @@ type ApiLogEvent = {
 };
 
 function emit(level: LogLevel, payload: ApiLogEvent): void {
-  const line = JSON.stringify({
-    ts: new Date().toISOString(),
-    level,
-    ...payload,
-  });
+  let line: string;
+
+  try {
+    line = JSON.stringify({
+      ts: new Date().toISOString(),
+      level,
+      ...payload,
+    });
+  } catch {
+    const fallback = {
+      ts: new Date().toISOString(),
+      level,
+      event: payload.event,
+      requestId: payload.requestId,
+      message: payload.message,
+      serializationError: true,
+    };
+
+    try {
+      line = JSON.stringify(fallback);
+    } catch {
+      line = `[${fallback.ts}] level=${level} event=${payload.event} requestId=${payload.requestId}`;
+    }
+  }
 
   if (level === "error") {
     console.error(line);

@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   const requestId = getOrCreateRequestId(request.headers);
   const key = publicRateLimitKey(request);
   const rl = takeToken(key);
+  const resetEpochSeconds = Math.floor(rl.resetAt / 1000);
 
   if (!rl.allowed) {
     logApiWarn({
@@ -25,12 +26,13 @@ export async function GET(request: NextRequest) {
       code: "RATE_LIMITED",
       message: "Too many requests for this endpoint. Please retry later.",
       retryable: true,
+      provider: "internal",
       status: 429,
       requestId,
     });
     response.headers.set("retry-after", String(rl.retryAfterSec));
     response.headers.set("x-ratelimit-remaining", "0");
-    response.headers.set("x-ratelimit-reset", String(rl.resetAt));
+    response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
     return response;
   }
 
@@ -58,6 +60,6 @@ export async function GET(request: NextRequest) {
     },
   });
   response.headers.set("x-ratelimit-remaining", String(rl.remaining));
-  response.headers.set("x-ratelimit-reset", String(rl.resetAt));
+  response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
   return response;
 }
