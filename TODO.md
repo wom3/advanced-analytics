@@ -16,11 +16,11 @@
 
 ## Feature 03: Dune Adapter
 
-- [ ] Implement execute query by queryId
-- [ ] Implement execution status polling
-- [ ] Implement execution result fetch
-- [ ] Implement latest query result fetch
-- [ ] Normalize Dune response to internal contract
+- [x] Implement execute query by queryId
+- [x] Implement execution status polling
+- [x] Implement execution result fetch
+- [x] Implement latest query result fetch
+- [x] Normalize Dune response to internal contract
 
 ## Feature 04: DefiLlama Adapter
 
