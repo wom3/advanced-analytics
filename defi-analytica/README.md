@@ -11,6 +11,7 @@ From this directory:
 ```bash
 npm i
 cp .env.example .env.local
+npm run infra:up
 npm run dev
 ```
 
@@ -23,12 +24,16 @@ Create `.env.local` (or `.env`) with:
 ```env
 NEXT_PUBLIC_APP_NAME=defi-analytica
 DUNE_API_KEY=your_key_here
+DATABASE_URL=postgresql://analytics:analytics@localhost:5432/analytics
+REDIS_URL=redis://localhost:6379
 ```
 
 Notes:
 
 - `DUNE_API_KEY` is required for Dune-backed endpoints.
 - In development, Dune key lookup prefers `.env.local` then `.env` before runtime env vars.
+- `DATABASE_URL` points to PostgreSQL (local default uses Docker Compose service).
+- `REDIS_URL` points to Redis cache (local default uses Docker Compose service).
 
 Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream advisories identified during this integration cycle).
 
@@ -41,6 +46,28 @@ Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream a
 - `npm run lint:fix` - auto-fix lint issues
 - `npm run format` - format repository files
 - `npm run format:check` - verify formatting
+- `npm run infra:up` - start local PostgreSQL + Redis via Docker Compose
+- `npm run infra:down` - stop local PostgreSQL + Redis
+- `npm run infra:logs` - tail PostgreSQL + Redis logs
+
+## Local Data Infra (Docker Compose)
+
+From this directory:
+
+```bash
+npm run infra:up
+```
+
+Services started by `docker-compose.yml`:
+
+- PostgreSQL: `localhost:5432` (db/user/password: `analytics`)
+- Redis: `localhost:6379`
+
+Stop services:
+
+```bash
+npm run infra:down
+```
 
 ## Implemented API Endpoints
 
