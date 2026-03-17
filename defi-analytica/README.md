@@ -45,10 +45,82 @@ Notes:
 Base: `/api/v1`
 
 - `GET /api/v1`
+- `GET /api/v1/llama/metrics/:metric`
 - `POST /api/v1/dune/queries/:queryId/execute`
 - `GET /api/v1/dune/executions/:executionId/status`
 - `GET /api/v1/dune/executions/:executionId/results`
 - `GET /api/v1/dune/queries/:queryId/latest`
+
+## How to Check Endpoints
+
+Start the app first:
+
+```bash
+npm run dev
+```
+
+Use another terminal for checks.
+
+### Check DefiLlama Endpoints
+
+Root health:
+
+```bash
+curl -s "http://localhost:3000/api/v1" | jq
+```
+
+TVL by chain (Ethereum):
+
+```bash
+curl -s "http://localhost:3000/api/v1/llama/metrics/tvl?chain=Ethereum&interval=1d&since=1735689600" | jq
+```
+
+DEX volume by protocol (Uniswap):
+
+```bash
+curl -s "http://localhost:3000/api/v1/llama/metrics/volume?protocol=uniswap&interval=1d" | jq
+```
+
+Perps/open-interest by protocol (GMX):
+
+```bash
+curl -s "http://localhost:3000/api/v1/llama/metrics/perps?protocol=gmx&interval=1d" | jq
+```
+
+### Check Dune Endpoints
+
+Execute a query (replace with your Dune query id):
+
+```bash
+QUERY_ID=1215383
+EXECUTION_ID=$(curl -s -X POST "http://localhost:3000/api/v1/dune/queries/$QUERY_ID/execute" \
+  -H "content-type: application/json" \
+  -d '{}' | jq -r '.data.executionId')
+echo "$EXECUTION_ID"
+```
+
+Check execution status:
+
+```bash
+curl -s "http://localhost:3000/api/v1/dune/executions/$EXECUTION_ID/status" | jq
+```
+
+Fetch execution results:
+
+```bash
+curl -s "http://localhost:3000/api/v1/dune/executions/$EXECUTION_ID/results?limit=100" | jq
+```
+
+Fetch latest cached result for a query:
+
+```bash
+curl -s "http://localhost:3000/api/v1/dune/queries/$QUERY_ID/latest?limit=100" | jq
+```
+
+Notes:
+
+- Dune checks require `DUNE_API_KEY` in `.env.local` or `.env`.
+- The response includes `x-request-id` and rate-limit headers on every endpoint.
 
 ### Response Contracts
 

@@ -24,10 +24,10 @@
 
 ## Feature 04: DefiLlama Adapter
 
-- [ ] Implement TVL endpoint integration
-- [ ] Implement historical chain and protocol fetch integration
-- [ ] Implement perps and volume summary integration
-- [ ] Normalize all series to shared time-series schema
+- [x] Implement TVL endpoint integration
+- [x] Implement historical chain and protocol fetch integration
+- [x] Implement perps and volume summary integration
+- [x] Normalize all series to shared time-series schema
 
 ## Feature 05: CoinGecko Adapter
 

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       service: "advanced-analytics-api",
       version: "v1",
       status: "ok",
-      endpoints: ["/api/v1"],
+      endpoints: ["/api/v1", "/api/v1/llama/metrics/:metric"],
     },
     meta: {
       route: "/api/v1",

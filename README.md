@@ -80,6 +80,31 @@ Run a query smoke test:
 .venv/bin/python run_dune_query.py 1215383
 ```
 
+## Endpoint Smoke Tests (Next.js API)
+
+If you are working on the app API in `defi-analytica/`, run:
+
+```bash
+cd defi-analytica
+npm run dev
+```
+
+In a second terminal, quick-check endpoints:
+
+```bash
+curl -s "http://localhost:3000/api/v1" | jq
+curl -s "http://localhost:3000/api/v1/llama/metrics/tvl?chain=Ethereum&interval=1d" | jq
+```
+
+Dune flow check (requires `DUNE_API_KEY` in `defi-analytica/.env.local`):
+
+```bash
+QUERY_ID=1215383
+EXECUTION_ID=$(curl -s -X POST "http://localhost:3000/api/v1/dune/queries/$QUERY_ID/execute" -H "content-type: application/json" -d '{}' | jq -r '.data.executionId')
+curl -s "http://localhost:3000/api/v1/dune/executions/$EXECUTION_ID/status" | jq
+curl -s "http://localhost:3000/api/v1/dune/executions/$EXECUTION_ID/results?limit=100" | jq
+```
+
 ## Roadmap
 
 Implementation is organized into feature blocks in `TODO.md`, including:
@@ -95,5 +120,3 @@ Implementation is organized into feature blocks in `TODO.md`, including:
 - Product and architecture requirements: `requirements.md`
 - Feature-by-feature plan: `TODO.md`
 - MCP server details: `tools/dune-analytics-mcp/README.md`
-
-
