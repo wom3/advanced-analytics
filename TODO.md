@@ -49,10 +49,10 @@
 
 ## Feature 08: Data Persistence and Cache
 
-- [ ] Add PostgreSQL schema for raw, normalized, features, and scores
-- [ ] Add Redis cache layer for hot API responses
-- [ ] Add TTL policy by endpoint type
-- [ ] Add cache invalidation for scheduled refreshes
+- [x] Add PostgreSQL schema for raw, normalized, features, and scores
+- [x] Add Redis cache layer for hot API responses
+- [x] Add TTL policy by endpoint type
+- [x] Add cache invalidation for scheduled refreshes
 
 ## Feature 09: Feature Engineering Service
 

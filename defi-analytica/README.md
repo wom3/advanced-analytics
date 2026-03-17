@@ -54,6 +54,7 @@ Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream a
 - `npm run prisma:migrate:deploy` - apply committed migrations
 - `npm run prisma:studio` - open Prisma Studio UI
 - `npm run prisma:format` - format `prisma/schema.prisma`
+- `npm run cache:invalidate` - invalidate Redis API cache keys (optionally by group)
 
 ## Local Data Infra (Docker Compose)
 
@@ -90,6 +91,29 @@ npm run prisma:migrate:dev -- --name your_change_name
 ```
 
 If `localhost:5433` is unavailable on your machine, update your local `DATABASE_URL` to a reachable PostgreSQL instance before running migrations.
+
+## Redis API Cache (Feature 08)
+
+Hot `/api/v1` responses use Redis cache-aside with endpoint-type TTLs.
+
+TTL policy:
+
+- `/api/v1/llama/metrics/:metric` -> 120s
+- `/api/v1/coingecko/market/:asset` -> 120s
+- `/api/v1/fng/latest` -> 60s
+- `/api/v1/fng/history` -> 300s
+
+Cache keys are prefixed with `aa:v1:http:` and include pathname + normalized query string.
+
+For scheduled refresh jobs, invalidate cache groups before/after refresh:
+
+```bash
+# invalidate all groups
+npm run cache:invalidate
+
+# invalidate selected groups
+REDIS_URL=redis://localhost:6379 npm run cache:invalidate -- fng.latest fng.history
+```
 
 ## Implemented API Endpoints
 
