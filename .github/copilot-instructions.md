@@ -1,46 +1,46 @@
 # Project Guidelines
 
-## Code Style
-- Prefer TypeScript strict mode for new app and API code.
-- Keep Python changes minimal and focused in `tools/dune-analytics-mcp/`.
-- Use Python 3.13+ for `tools/dune-analytics-mcp/` work.
-- Preserve existing public interfaces and output formats unless a task explicitly changes them.
-- Use clear, small functions with explicit error handling and typed response contracts.
+## Big Picture (Current State)
 
-## Architecture
-- This workspace currently contains a working Dune MCP server in `tools/dune-analytics-mcp/`.
-- The target product is an API-first analytics dashboard described in `requirements.md` and planned in `TODO.md`.
-- For planned dashboard work, use: Next.js 15+ App Router, React 19+, Node.js 20 LTS, TypeScript strict mode.
-- Charts and visualization stack: Chart.js + react-chartjs-2, Three.js + react-three-fiber.
-- Use provider adapters behind internal API routes. Do not call external providers directly from client-side UI code.
-- Keep provider-specific logic in adapters and expose normalized contracts to services and routes.
-- Gate optional providers with feature flags rather than runtime failures.
+- Active app lives in `defi-analytica/` (Next.js App Router + TypeScript strict mode).
+- API boundary is internal route handlers under `defi-analytica/app/api/v1/**`.
+- Provider-specific logic is isolated in adapters (`src/server/adapters/dune/client.ts`, `src/server/adapters/defillama/client.ts`).
+- Shared API contracts are centralized in `src/server/api/envelope.ts` and used by every route.
+- `requirements.md` and `TODO.md` describe planned providers/features; implement only what exists unless asked.
 
-## Build and Test
-- For MCP server setup, from `tools/dune-analytics-mcp/`:
-  - Create env: `python3.13 -m venv .venv`
-  - Install deps: `.venv/bin/python -m pip install -U pip mcp[cli] httpx pandas python-dotenv socksio`
-  - Run server: `.venv/bin/python main.py`
-  - Run query smoke test: `.venv/bin/python run_dune_query.py 1215383`
-- Ensure `DUNE_API_KEY` is set in `tools/dune-analytics-mcp/.env` before running Dune scripts.
+## Request/Data Flow Patterns
 
-## Conventions
-- MCP tools should return stable string outputs and fail gracefully with readable error messages.
-- Dune query execution is asynchronous. Always poll execution status until completion before fetching results.
-- Account for endpoint/state variations in Dune API responses (for compatibility across API versions).
-- Keep request timeouts realistic for analytics workloads (longer-running queries are expected).
-- Use `httpx.Client(trust_env=False)` for provider calls when proxy env can interfere.
-- For new dashboard APIs, standardize responses with source, asOf, freshness, data, and meta fields.
-- For new dashboard APIs, follow `requirements.md` contracts:
-  - Success: `{ source, asOf, freshnessSec, data, meta }`
-  - Error: `{ code, message, retryable }`
+- Every `/api/v1/*` request passes through `defi-analytica/proxy.ts` to attach `x-request-id` and emit request-received logs.
+- Route handlers follow a consistent sequence: request ID -> rate limit check -> param/query parsing -> adapter call -> envelope response.
+- Rate limiting is per-IP + pathname via `publicRateLimitKey()` and `takeToken()` in `src/server/api/rate-limit.ts`.
+- Success response contract: `{ source, asOf, freshnessSec, data, meta }`.
+- Error response contract: `{ code, message, retryable, provider }`.
 
-## Pitfalls
-- Proxy environment variables can break HTTP clients unexpectedly. If needed, disable inherited proxy env for provider calls.
-- Missing or misplaced `.env` files are a common failure mode for local execution.
-- Put `DUNE_API_KEY` in `tools/dune-analytics-mcp/.env` before running local scripts.
-- Do not hardcode secrets or expose provider keys in client bundles.
+## Dune Integration Conventions
 
-## Source of Truth
-- Product and architecture requirements: `requirements.md`
-- Feature-by-feature implementation plan: `TODO.md`
+- Dune routes are implemented at:
+  - `app/api/v1/dune/queries/[queryId]/execute/route.ts`
+  - `app/api/v1/dune/executions/[executionId]/status/route.ts`
+  - `app/api/v1/dune/executions/[executionId]/results/route.ts`
+  - `app/api/v1/dune/queries/[queryId]/latest/route.ts`
+- Use `DuneApiError` for adapter failures; routes map this to stable API error codes (e.g. `DUNE_RESULTS_FAILED`).
+- `src/server/adapters/dune/client.ts` normalizes provider payloads (`DuneNormalizedStatus`, `DuneNormalizedResult`) before returning.
+- Dune calls use `fetch` with `AbortSignal.timeout(120_000)` and `cache: "no-store"`.
+- In development, Dune key lookup prefers `.env.local` then `.env` in app root (`defi-analytica/`) before fallback to runtime env.
+
+## Local Workflow (defi-analytica)
+
+- Install deps: `npm i`
+- Dev server: `npm run dev`
+- Lint (enforced zero warnings): `npm run lint`
+- Build production bundle: `npm run build`
+- Format/check: `npm run format` / `npm run format:check`
+- Environment template: `defi-analytica/.env.example` (`DUNE_API_KEY` needed for Dune-backed endpoints).
+
+## Project-Specific Coding Rules
+
+- Keep route handlers thin; put provider/network logic in adapter modules under `src/server/adapters/**`.
+- Preserve existing response envelope shapes and headers (`x-request-id`, rate-limit headers) when adding endpoints.
+- Follow existing parsing style: explicit `parse*` helpers for params/query values; return 400 on invalid user input.
+- Use structured logger helpers (`logApiInfo`, `logApiWarn`, `logApiError`) from `src/server/observability/logger.ts`.
+- Reuse path alias imports (`@/*`) and keep TypeScript strictness settings intact (`tsconfig.json`).

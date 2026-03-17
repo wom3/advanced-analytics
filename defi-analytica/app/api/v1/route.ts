@@ -53,7 +53,14 @@ export async function GET(request: NextRequest) {
       service: "advanced-analytics-api",
       version: "v1",
       status: "ok",
-      endpoints: ["/api/v1"],
+      endpoints: [
+        "/api/v1",
+        "/api/v1/llama/metrics/:metric",
+        "/api/v1/dune/queries/:queryId/execute",
+        "/api/v1/dune/executions/:executionId/status",
+        "/api/v1/dune/executions/:executionId/results",
+        "/api/v1/dune/queries/:queryId/latest",
+      ],
     },
     meta: {
       route: "/api/v1",
