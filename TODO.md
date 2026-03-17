@@ -37,9 +37,9 @@
 
 ## Feature 06: Alternative.me Adapter
 
-- [ ] Implement latest fear and greed fetch
-- [ ] Implement historical fear and greed fetch
-- [ ] Add source attribution metadata in responses
+- [x] Implement latest fear and greed fetch
+- [x] Implement historical fear and greed fetch
+- [x] Add source attribution metadata in responses
 
 ## Feature 07: Optional Exchange Adapter
 
