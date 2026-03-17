@@ -47,7 +47,16 @@ function parseOptionalTimestamp(value: string | null, name: string): number | un
       false
     );
   }
-  return Math.floor(asDate / 1_000);
+
+  const epochSeconds = Math.floor(asDate / 1_000);
+  if (epochSeconds < 0) {
+    throw new CoinGeckoApiError(
+      `${name} must be a non-negative unix timestamp in seconds or an ISO-8601 datetime on/after 1970-01-01T00:00:00Z.`,
+      400,
+      false
+    );
+  }
+  return epochSeconds;
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ asset: string }> }) {

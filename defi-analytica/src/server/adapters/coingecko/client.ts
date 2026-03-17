@@ -219,7 +219,22 @@ export async function getCoinGeckoMarketSeries(
   const intervalSec = parseIntervalSec(options?.interval);
   const nowSec = Math.floor(Date.now() / 1_000);
   const untilSec = options?.untilSec ?? nowSec;
-  const sinceSec = options?.sinceSec ?? untilSec - 30 * 86_400;
+
+  let sinceSec: number;
+  if (options?.sinceSec !== undefined) {
+    sinceSec = options.sinceSec;
+  } else {
+    const defaultSinceSec = untilSec - 30 * 86_400;
+    sinceSec = defaultSinceSec < 0 ? 0 : defaultSinceSec;
+  }
+
+  if (sinceSec < 0 || untilSec < 0) {
+    throw new CoinGeckoApiError(
+      "since and until must be non-negative Unix timestamps.",
+      400,
+      false
+    );
+  }
 
   if (sinceSec > untilSec) {
     throw new CoinGeckoApiError("since must be less than or equal to until.", 400, false);
