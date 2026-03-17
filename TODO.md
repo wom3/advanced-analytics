@@ -43,9 +43,9 @@
 
 ## Feature 07: Optional Exchange Adapter
 
-- [ ] Implement candlestick data fetch for selected symbols
-- [ ] Compute realized volatility and momentum proxy fields
-- [ ] Add feature flag to enable or disable exchange signals
+- [x] Implement candlestick data fetch for selected symbols
+- [x] Compute realized volatility and momentum proxy fields
+- [x] Add feature flag to enable or disable exchange signals
 
 ## Feature 08: Data Persistence and Cache
 

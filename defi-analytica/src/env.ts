@@ -4,6 +4,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   NEXT_PUBLIC_APP_NAME: z.string().trim().min(1).default("defi-analytica"),
   DUNE_API_KEY: z.string().trim().min(1).optional(),
+  ENABLE_EXCHANGE_SIGNALS: z.enum(["true", "false"]).default("false"),
+  EXCHANGE_ALLOWED_SYMBOLS: z.string().trim().default("BTCUSDT,ETHUSDT,SOLUSDT"),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -15,4 +17,13 @@ if (!parsed.success) {
   throw new Error(`Invalid environment configuration: ${issues}`);
 }
 
-export const env = parsed.data;
+const exchangeAllowedSymbols = parsed.data.EXCHANGE_ALLOWED_SYMBOLS.split(",")
+  .map((symbol) => symbol.trim().toUpperCase())
+  .filter((symbol) => /^[A-Z0-9]{5,20}$/.test(symbol));
+
+export const env = {
+  ...parsed.data,
+  ENABLE_EXCHANGE_SIGNALS: parsed.data.ENABLE_EXCHANGE_SIGNALS === "true",
+  EXCHANGE_ALLOWED_SYMBOLS:
+    exchangeAllowedSymbols.length > 0 ? exchangeAllowedSymbols : ["BTCUSDT", "ETHUSDT"],
+};
