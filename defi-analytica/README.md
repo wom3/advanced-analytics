@@ -49,6 +49,11 @@ Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream a
 - `npm run infra:up` - start local PostgreSQL + Redis via Docker Compose
 - `npm run infra:down` - stop local PostgreSQL + Redis
 - `npm run infra:logs` - tail PostgreSQL + Redis logs
+- `npm run prisma:generate` - generate Prisma Client
+- `npm run prisma:migrate:dev` - create/apply a local development migration
+- `npm run prisma:migrate:deploy` - apply committed migrations
+- `npm run prisma:studio` - open Prisma Studio UI
+- `npm run prisma:format` - format `prisma/schema.prisma`
 
 ## Local Data Infra (Docker Compose)
 
@@ -68,6 +73,23 @@ Stop services:
 ```bash
 npm run infra:down
 ```
+
+## Prisma Setup (PostgreSQL)
+
+Prisma schema and migrations live in `prisma/`:
+
+- `prisma/schema.prisma`
+- `prisma/migrations/*`
+
+Typical local workflow:
+
+```bash
+npm run infra:up
+npm run prisma:generate
+npm run prisma:migrate:dev -- --name your_change_name
+```
+
+If your machine already uses `localhost:5432`, free that port or update your local `DATABASE_URL` to a reachable PostgreSQL instance before running migrations.
 
 ## Implemented API Endpoints
 
