@@ -8,7 +8,8 @@ API-first crypto analytics platform that combines:
 
 ## Current Status
 
-- The workspace currently includes a functional Dune MCP server under `tools/dune-analytics-mcp`.
+- Active implementation lives in `defi-analytica/` (Next.js App Router + TypeScript strict mode).
+- Implemented provider routes currently cover Dune and DefiLlama under `/api/v1/**`.
 - Product requirements are documented in `requirements.md`.
 - Feature-by-feature implementation plan is tracked in `TODO.md`.
 
@@ -44,40 +45,56 @@ Key rule:
 ├── README.md
 ├── requirements.md
 ├── TODO.md
-└── tools/
-	└── dune-analytics-mcp/
-		├── main.py
-		├── run_dune_query.py
-		├── pyproject.toml
-		└── README.md
+└── defi-analytica/
+	├── app/
+	├── src/
+	├── proxy.ts
+	├── package.json
+	└── README.md
 ```
 
-## Quick Start (Dune MCP Server)
+## Quick Start (Next.js API App)
 
 From the repository root:
 
 ```bash
-cd tools/dune-analytics-mcp
-python3.13 -m venv .venv
-.venv/bin/python -m pip install -U pip mcp[cli] httpx pandas python-dotenv socksio
+cd defi-analytica
+npm i
+cp .env.example .env.local
+npm run dev
 ```
 
-Create `tools/dune-analytics-mcp/.env`:
+Create `defi-analytica/.env.local`:
 
 ```env
+NEXT_PUBLIC_APP_NAME=defi-analytica
 DUNE_API_KEY=your_dune_api_key
 ```
 
-Run server:
+## Endpoint Smoke Tests (Next.js API)
+
+If you are working on the app API in `defi-analytica/`, run:
 
 ```bash
-.venv/bin/python main.py
+cd defi-analytica
+npm run dev
 ```
 
-Run a query smoke test:
+In a second terminal, quick-check endpoints:
 
 ```bash
-.venv/bin/python run_dune_query.py 1215383
+curl -s "http://localhost:3000/api/v1" | jq
+curl -s "http://localhost:3000/api/v1/llama/metrics/tvl?chain=Ethereum&interval=1d" | jq
+curl -s "http://localhost:3000/api/v1/coingecko/market/bitcoin?interval=1d" | jq
+```
+
+Dune flow check (requires `DUNE_API_KEY` in `defi-analytica/.env.local`):
+
+```bash
+QUERY_ID=1215383
+EXECUTION_ID=$(curl -s -X POST "http://localhost:3000/api/v1/dune/queries/$QUERY_ID/execute" -H "content-type: application/json" -d '{}' | jq -r '.data.executionId')
+curl -s "http://localhost:3000/api/v1/dune/executions/$EXECUTION_ID/status" | jq
+curl -s "http://localhost:3000/api/v1/dune/executions/$EXECUTION_ID/results?limit=100" | jq
 ```
 
 ## Roadmap
@@ -94,6 +111,4 @@ Implementation is organized into feature blocks in `TODO.md`, including:
 
 - Product and architecture requirements: `requirements.md`
 - Feature-by-feature plan: `TODO.md`
-- MCP server details: `tools/dune-analytics-mcp/README.md`
-
-
+- App and endpoint documentation: `defi-analytica/README.md`
