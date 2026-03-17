@@ -21,9 +21,14 @@ const exchangeAllowedSymbols = parsed.data.EXCHANGE_ALLOWED_SYMBOLS.split(",")
   .map((symbol) => symbol.trim().toUpperCase())
   .filter((symbol) => /^[A-Z0-9]{5,20}$/.test(symbol));
 
+if (parsed.data.ENABLE_EXCHANGE_SIGNALS === "true" && exchangeAllowedSymbols.length === 0) {
+  throw new Error(
+    "Invalid environment configuration: ENABLE_EXCHANGE_SIGNALS is true but EXCHANGE_ALLOWED_SYMBOLS is empty or contains no valid symbols."
+  );
+}
+
 export const env = {
   ...parsed.data,
   ENABLE_EXCHANGE_SIGNALS: parsed.data.ENABLE_EXCHANGE_SIGNALS === "true",
-  EXCHANGE_ALLOWED_SYMBOLS:
-    exchangeAllowedSymbols.length > 0 ? exchangeAllowedSymbols : ["BTCUSDT", "ETHUSDT"],
+  EXCHANGE_ALLOWED_SYMBOLS: exchangeAllowedSymbols,
 };

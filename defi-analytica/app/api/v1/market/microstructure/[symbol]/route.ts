@@ -4,6 +4,7 @@ import { env } from "@/src/env";
 import { getOrCreateRequestId, jsonError, jsonSuccess } from "@/src/server/api/envelope";
 import { publicRateLimitKey, takeToken } from "@/src/server/api/rate-limit";
 import {
+  BINANCE_MAX_LIMIT,
   ExchangeApiError,
   getExchangeMicrostructureSeries,
 } from "@/src/server/adapters/exchange/client";
@@ -67,8 +68,12 @@ function parseOptionalLimit(value: string | null): number | undefined {
   }
 
   const numeric = Number(parsedValue);
-  if (!Number.isInteger(numeric) || numeric <= 0 || numeric > 1000) {
-    throw new ExchangeApiError("limit must be an integer between 1 and 1000.", 400, false);
+  if (!Number.isInteger(numeric) || numeric <= 0 || numeric > BINANCE_MAX_LIMIT) {
+    throw new ExchangeApiError(
+      `limit must be an integer between 1 and ${BINANCE_MAX_LIMIT}.`,
+      400,
+      false
+    );
   }
   return numeric;
 }
