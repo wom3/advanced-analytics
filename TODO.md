@@ -31,9 +31,9 @@
 
 ## Feature 05: CoinGecko Adapter
 
-- [ ] Implement market chart data fetch by asset
-- [ ] Implement market-cap and volume extraction
-- [ ] Normalize and align intervals with other providers
+- [x] Implement market chart data fetch by asset
+- [x] Implement market-cap and volume extraction
+- [x] Normalize and align intervals with other providers
 
 ## Feature 06: Alternative.me Adapter
 

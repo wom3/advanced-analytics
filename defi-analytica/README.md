@@ -48,6 +48,7 @@ Base: `/api/v1`
 
 - `GET /api/v1`
 - `GET /api/v1/llama/metrics/:metric`
+- `GET /api/v1/coingecko/market/:asset`
 - `POST /api/v1/dune/queries/:queryId/execute`
 - `GET /api/v1/dune/executions/:executionId/status`
 - `GET /api/v1/dune/executions/:executionId/results`
@@ -87,6 +88,14 @@ Perps/open-interest by protocol (GMX):
 
 ```bash
 curl -s "http://localhost:3000/api/v1/llama/metrics/perps?protocol=gmx&interval=1d" | jq
+```
+
+### Check CoinGecko Endpoints
+
+Market chart by asset (Bitcoin):
+
+```bash
+curl -s "http://localhost:3000/api/v1/coingecko/market/bitcoin?interval=1d&since=1735689600" | jq
 ```
 
 ### Check Dune Endpoints

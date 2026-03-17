@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
       endpoints: [
         "/api/v1",
         "/api/v1/llama/metrics/:metric",
+        "/api/v1/coingecko/market/:asset",
         "/api/v1/dune/queries/:queryId/execute",
         "/api/v1/dune/executions/:executionId/status",
         "/api/v1/dune/executions/:executionId/results",

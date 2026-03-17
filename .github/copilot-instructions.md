@@ -4,7 +4,7 @@
 
 - Active app lives in `defi-analytica/` (Next.js App Router + TypeScript strict mode).
 - API boundary is internal route handlers under `defi-analytica/app/api/v1/**`.
-- Provider-specific logic is isolated in adapters (`src/server/adapters/dune/client.ts`, `src/server/adapters/defillama/client.ts`).
+- Provider-specific logic is isolated in adapters (`src/server/adapters/dune/client.ts`, `src/server/adapters/defillama/client.ts`, `src/server/adapters/coingecko/client.ts`).
 - Shared API contracts are centralized in `src/server/api/envelope.ts` and used by every route.
 - `requirements.md` and `TODO.md` describe planned providers/features; implement only what exists unless asked.
 

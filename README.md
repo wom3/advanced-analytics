@@ -85,6 +85,7 @@ In a second terminal, quick-check endpoints:
 ```bash
 curl -s "http://localhost:3000/api/v1" | jq
 curl -s "http://localhost:3000/api/v1/llama/metrics/tvl?chain=Ethereum&interval=1d" | jq
+curl -s "http://localhost:3000/api/v1/coingecko/market/bitcoin?interval=1d" | jq
 ```
 
 Dune flow check (requires `DUNE_API_KEY` in `defi-analytica/.env.local`):
