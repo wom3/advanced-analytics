@@ -49,6 +49,8 @@ Base: `/api/v1`
 - `GET /api/v1`
 - `GET /api/v1/llama/metrics/:metric`
 - `GET /api/v1/coingecko/market/:asset`
+- `GET /api/v1/fng/latest`
+- `GET /api/v1/fng/history`
 - `POST /api/v1/dune/queries/:queryId/execute`
 - `GET /api/v1/dune/executions/:executionId/status`
 - `GET /api/v1/dune/executions/:executionId/results`
@@ -96,6 +98,20 @@ Market chart by asset (Bitcoin):
 
 ```bash
 curl -s "http://localhost:3000/api/v1/coingecko/market/bitcoin?interval=1d&since=1735689600" | jq
+```
+
+### Check Alternative.me (Fear & Greed) Endpoints
+
+Latest reading:
+
+```bash
+curl -s "http://localhost:3000/api/v1/fng/latest" | jq
+```
+
+History (limit + optional range filters):
+
+```bash
+curl -s "http://localhost:3000/api/v1/fng/history?limit=30&since=1735689600" | jq
 ```
 
 ### Check Dune Endpoints
