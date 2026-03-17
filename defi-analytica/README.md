@@ -2,7 +2,7 @@
 
 API-first crypto analytics app built with Next.js App Router and TypeScript strict mode.
 
-Current implementation focuses on a Dune-backed `/api/v1` surface with normalized response envelopes, request tracing, and per-endpoint rate limiting.
+Current implementation provides Dune and DefiLlama-backed `/api/v1` routes with normalized response envelopes, request tracing, and per-endpoint rate limiting.
 
 ## Quick Start
 
@@ -29,6 +29,8 @@ Notes:
 
 - `DUNE_API_KEY` is required for Dune-backed endpoints.
 - In development, Dune key lookup prefers `.env.local` then `.env` before runtime env vars.
+
+Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream advisories identified during this integration cycle).
 
 ## Scripts
 
@@ -128,7 +130,7 @@ Success envelope:
 
 ```json
 {
-  "source": "dune|internal",
+  "source": "dune|defillama|internal",
   "asOf": "ISO timestamp",
   "freshnessSec": 0,
   "data": {},
@@ -143,7 +145,7 @@ Error envelope:
   "code": "MACHINE_READABLE_CODE",
   "message": "human-readable message",
   "retryable": true,
-  "provider": "dune|internal"
+  "provider": "dune|defillama|internal"
 }
 ```
 

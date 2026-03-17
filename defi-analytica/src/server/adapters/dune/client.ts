@@ -164,13 +164,26 @@ async function duneRequest<T>(
   params?: Record<string, string | number | boolean | undefined>
 ): Promise<T> {
   const url = `${DUNE_BASE_URL}${path}${queryString(params)}`;
-  const response = await fetch(url, {
-    method,
-    headers: headers(),
-    body: body === undefined ? null : JSON.stringify(body),
-    cache: "no-store",
-    signal: AbortSignal.timeout(120_000),
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers: headers(),
+      body: body === undefined ? null : JSON.stringify(body),
+      cache: "no-store",
+      signal: AbortSignal.timeout(120_000),
+    });
+  } catch (error) {
+    const err = error as Error & { name?: string };
+    const isTimeout = err?.name === "TimeoutError" || err?.name === "AbortError";
+    throw new DuneApiError(
+      isTimeout
+        ? "Dune request timed out before a response was received."
+        : "Failed to reach Dune API due to a network error.",
+      isTimeout ? 504 : 502,
+      true
+    );
+  }
 
   let payload: unknown;
   try {
@@ -200,8 +213,12 @@ async function duneRequest<T>(
 }
 
 function normalizeStatus(payload: DuneApiResponse): DuneNormalizedStatus {
+  if (typeof payload.execution_id !== "string" || payload.execution_id.length === 0) {
+    throw new DuneApiError("Dune API response is missing a valid execution_id.", 502, false);
+  }
+
   return {
-    executionId: payload.execution_id ?? "",
+    executionId: payload.execution_id,
     queryId: payload.query_id ?? null,
     state: payload.state ?? null,
     isExecutionFinished: payload.is_execution_finished ?? null,

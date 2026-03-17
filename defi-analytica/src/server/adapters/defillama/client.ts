@@ -135,11 +135,24 @@ function sanitizeRawPoints(
 }
 
 async function llamaRequest<T>(path: string): Promise<T> {
-  const response = await fetch(`${LLAMA_BASE_URL}${path}`, {
-    method: "GET",
-    cache: "no-store",
-    signal: AbortSignal.timeout(120_000),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${LLAMA_BASE_URL}${path}`, {
+      method: "GET",
+      cache: "no-store",
+      signal: AbortSignal.timeout(120_000),
+    });
+  } catch (error) {
+    const err = error as Error & { name?: string };
+    const isTimeout = err?.name === "TimeoutError" || err?.name === "AbortError";
+    throw new LlamaApiError(
+      isTimeout
+        ? "DefiLlama request timed out before a response was received."
+        : "Failed to reach DefiLlama due to a network error.",
+      isTimeout ? 504 : 502,
+      true
+    );
+  }
 
   let payload: unknown;
   try {

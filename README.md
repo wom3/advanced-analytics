@@ -8,7 +8,8 @@ API-first crypto analytics platform that combines:
 
 ## Current Status
 
-- The workspace currently includes a functional Dune MCP server under `tools/dune-analytics-mcp`.
+- Active implementation lives in `defi-analytica/` (Next.js App Router + TypeScript strict mode).
+- Implemented provider routes currently cover Dune and DefiLlama under `/api/v1/**`.
 - Product requirements are documented in `requirements.md`.
 - Feature-by-feature implementation plan is tracked in `TODO.md`.
 
@@ -44,40 +45,30 @@ Key rule:
 ├── README.md
 ├── requirements.md
 ├── TODO.md
-└── tools/
-	└── dune-analytics-mcp/
-		├── main.py
-		├── run_dune_query.py
-		├── pyproject.toml
-		└── README.md
+└── defi-analytica/
+	├── app/
+	├── src/
+	├── proxy.ts
+	├── package.json
+	└── README.md
 ```
 
-## Quick Start (Dune MCP Server)
+## Quick Start (Next.js API App)
 
 From the repository root:
 
 ```bash
-cd tools/dune-analytics-mcp
-python3.13 -m venv .venv
-.venv/bin/python -m pip install -U pip mcp[cli] httpx pandas python-dotenv socksio
+cd defi-analytica
+npm i
+cp .env.example .env.local
+npm run dev
 ```
 
-Create `tools/dune-analytics-mcp/.env`:
+Create `defi-analytica/.env.local`:
 
 ```env
+NEXT_PUBLIC_APP_NAME=defi-analytica
 DUNE_API_KEY=your_dune_api_key
-```
-
-Run server:
-
-```bash
-.venv/bin/python main.py
-```
-
-Run a query smoke test:
-
-```bash
-.venv/bin/python run_dune_query.py 1215383
 ```
 
 ## Endpoint Smoke Tests (Next.js API)
@@ -119,4 +110,4 @@ Implementation is organized into feature blocks in `TODO.md`, including:
 
 - Product and architecture requirements: `requirements.md`
 - Feature-by-feature plan: `TODO.md`
-- MCP server details: `tools/dune-analytics-mcp/README.md`
+- App and endpoint documentation: `defi-analytica/README.md`
