@@ -1,4 +1,6 @@
 import { env } from "@/src/env";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const DUNE_BASE_URL = "https://api.dune.com/api/v1";
 
@@ -78,11 +80,59 @@ export class DuneApiError extends Error {
   }
 }
 
+let cachedLocalDuneApiKey: string | null | undefined;
+
+function parseDuneApiKeyFromEnvFile(content: string): string | undefined {
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.startsWith("DUNE_API_KEY=")) {
+      continue;
+    }
+    const raw = trimmed.slice("DUNE_API_KEY=".length).trim();
+    const unquoted = raw.replace(/^['\"](.*)['\"]$/, "$1").trim();
+    if (unquoted) {
+      return unquoted;
+    }
+  }
+  return undefined;
+}
+
+function getLocalDuneApiKey(): string | undefined {
+  if (cachedLocalDuneApiKey !== undefined) {
+    return cachedLocalDuneApiKey ?? undefined;
+  }
+
+  const candidates = [".env.local", ".env"];
+  for (const filename of candidates) {
+    const filePath = join(process.cwd(), filename);
+    if (!existsSync(filePath)) {
+      continue;
+    }
+    const parsed = parseDuneApiKeyFromEnvFile(readFileSync(filePath, "utf8"));
+    if (parsed) {
+      cachedLocalDuneApiKey = parsed;
+      return parsed;
+    }
+  }
+
+  cachedLocalDuneApiKey = null;
+  return undefined;
+}
+
 function apiKey(): string {
-  if (!env.DUNE_API_KEY) {
+  const runtimeKey = env.DUNE_API_KEY?.trim();
+  if (process.env.NODE_ENV === "development") {
+    const localFileKey = getLocalDuneApiKey();
+    if (localFileKey) {
+      return localFileKey;
+    }
+  }
+
+  if (!runtimeKey) {
     throw new DuneApiError("Missing DUNE_API_KEY in server environment.", 500, false);
   }
-  return env.DUNE_API_KEY;
+  return runtimeKey;
 }
 
 function headers(): HeadersInit {
