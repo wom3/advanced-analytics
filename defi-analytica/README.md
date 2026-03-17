@@ -24,7 +24,7 @@ Create `.env.local` (or `.env`) with:
 ```env
 NEXT_PUBLIC_APP_NAME=defi-analytica
 DUNE_API_KEY=your_key_here
-DATABASE_URL=postgresql://analytics:analytics@localhost:5432/analytics
+DATABASE_URL=postgresql://analytics:analytics@localhost:5433/analytics
 REDIS_URL=redis://localhost:6379
 ```
 
@@ -65,7 +65,7 @@ npm run infra:up
 
 Services started by `docker-compose.yml`:
 
-- PostgreSQL: `localhost:5432` (db/user/password: `analytics`)
+- PostgreSQL: `localhost:5433` (db/user/password: `analytics`)
 - Redis: `localhost:6379`
 
 Stop services:
@@ -89,7 +89,7 @@ npm run prisma:generate
 npm run prisma:migrate:dev -- --name your_change_name
 ```
 
-If your machine already uses `localhost:5432`, free that port or update your local `DATABASE_URL` to a reachable PostgreSQL instance before running migrations.
+If `localhost:5433` is unavailable on your machine, update your local `DATABASE_URL` to a reachable PostgreSQL instance before running migrations.
 
 ## Implemented API Endpoints
 
