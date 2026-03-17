@@ -4,6 +4,7 @@ import { getOrCreateRequestId, jsonError, jsonSuccess } from "@/src/server/api/e
 import { publicRateLimitKey, takeToken } from "@/src/server/api/rate-limit";
 import {
   ALTERNATIVE_ATTRIBUTION,
+  ALTERNATIVE_MAX_LIMIT,
   AlternativeApiError,
   getFearGreedHistory,
 } from "@/src/server/adapters/alternative/client";
@@ -47,8 +48,12 @@ function parseOptionalLimit(value: string | null): number | undefined {
     return undefined;
   }
   const numeric = Number(value);
-  if (!Number.isInteger(numeric) || numeric <= 0 || numeric > 10_000) {
-    throw new AlternativeApiError("limit must be an integer between 1 and 10000.", 400, false);
+  if (!Number.isInteger(numeric) || numeric <= 0 || numeric > ALTERNATIVE_MAX_LIMIT) {
+    throw new AlternativeApiError(
+      `limit must be an integer between 1 and ${ALTERNATIVE_MAX_LIMIT}.`,
+      400,
+      false
+    );
   }
   return numeric;
 }

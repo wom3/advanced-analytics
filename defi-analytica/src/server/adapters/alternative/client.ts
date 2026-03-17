@@ -1,4 +1,6 @@
 const ALTERNATIVE_BASE_URL = "https://api.alternative.me";
+const ALTERNATIVE_DEFAULT_LIMIT = 100;
+export const ALTERNATIVE_MAX_LIMIT = 1_000;
 
 export const ALTERNATIVE_ATTRIBUTION = {
   provider: "alternative.me",
@@ -18,11 +20,17 @@ type AlternativeApiPayload = {
   };
 };
 
+type AlternativeApiPoint = NonNullable<AlternativeApiPayload["data"]>[number];
+
 export type AlternativeFngPoint = {
   timestamp: string;
   value: number;
   classification: string;
   timeUntilUpdateSec: number | null;
+};
+
+type ParsedAlternativeFngPoint = AlternativeFngPoint & {
+  timestampSec: number;
 };
 
 export class AlternativeApiError extends Error {
@@ -41,7 +49,7 @@ function toIso(timestampSec: number): string {
   return new Date(timestampSec * 1_000).toISOString();
 }
 
-function parsePoint(raw: AlternativeApiPayload["data"][number]): AlternativeFngPoint | null {
+function parsePoint(raw: AlternativeApiPoint): ParsedAlternativeFngPoint | null {
   const value = Number(raw?.value ?? Number.NaN);
   const timestampSec = Number(raw?.timestamp ?? Number.NaN);
   const classification = raw?.value_classification?.trim() ?? "";
@@ -56,6 +64,7 @@ function parsePoint(raw: AlternativeApiPayload["data"][number]): AlternativeFngP
     : null;
 
   return {
+    timestampSec,
     timestamp: toIso(timestampSec),
     value,
     classification,
@@ -63,8 +72,22 @@ function parsePoint(raw: AlternativeApiPayload["data"][number]): AlternativeFngP
   };
 }
 
+function toPublicPoint(point: ParsedAlternativeFngPoint): AlternativeFngPoint {
+  return {
+    timestamp: point.timestamp,
+    value: point.value,
+    classification: point.classification,
+    timeUntilUpdateSec: point.timeUntilUpdateSec,
+  };
+}
+
 async function alternativeRequest(limit: number): Promise<AlternativeApiPayload> {
-  const url = `${ALTERNATIVE_BASE_URL}/fng/?limit=${limit}&format=json`;
+  if (!Number.isInteger(limit) || limit <= 0) {
+    throw new AlternativeApiError("limit must be a positive integer.", 400, false);
+  }
+
+  const cappedLimit = Math.min(limit, ALTERNATIVE_MAX_LIMIT);
+  const url = `${ALTERNATIVE_BASE_URL}/fng/?limit=${cappedLimit}&format=json`;
 
   let response: Response;
   try {
@@ -118,7 +141,9 @@ async function alternativeRequest(limit: number): Promise<AlternativeApiPayload>
 
 export async function getFearGreedLatest(): Promise<AlternativeFngPoint> {
   const payload = await alternativeRequest(1);
-  const parsed = (payload.data ?? []).map(parsePoint).filter(Boolean) as AlternativeFngPoint[];
+  const parsed = (payload.data ?? [])
+    .map(parsePoint)
+    .filter(Boolean) as ParsedAlternativeFngPoint[];
 
   if (parsed.length === 0) {
     throw new AlternativeApiError(
@@ -128,7 +153,7 @@ export async function getFearGreedLatest(): Promise<AlternativeFngPoint> {
     );
   }
 
-  return parsed[0];
+  return toPublicPoint(parsed[0]);
 }
 
 export async function getFearGreedHistory(options?: {
@@ -136,26 +161,25 @@ export async function getFearGreedHistory(options?: {
   sinceSec?: number;
   untilSec?: number;
 }): Promise<AlternativeFngPoint[]> {
-  const limit = options?.limit ?? 100;
+  const limit = options?.limit ?? ALTERNATIVE_DEFAULT_LIMIT;
   const payload = await alternativeRequest(limit);
-  const points = (payload.data ?? []).map(parsePoint).filter(Boolean) as AlternativeFngPoint[];
+  const points = (payload.data ?? [])
+    .map(parsePoint)
+    .filter(Boolean) as ParsedAlternativeFngPoint[];
 
   const sinceSec = options?.sinceSec;
   const untilSec = options?.untilSec;
 
   return points
     .filter((point) => {
-      const tsSec = Math.floor(Date.parse(point.timestamp) / 1_000);
-      if (!Number.isFinite(tsSec)) {
+      if (sinceSec !== undefined && point.timestampSec < sinceSec) {
         return false;
       }
-      if (sinceSec !== undefined && tsSec < sinceSec) {
-        return false;
-      }
-      if (untilSec !== undefined && tsSec > untilSec) {
+      if (untilSec !== undefined && point.timestampSec > untilSec) {
         return false;
       }
       return true;
     })
-    .sort((left, right) => Date.parse(left.timestamp) - Date.parse(right.timestamp));
+    .sort((left, right) => left.timestampSec - right.timestampSec)
+    .map(toPublicPoint);
 }
