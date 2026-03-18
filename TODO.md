@@ -63,10 +63,10 @@
 
 ## Feature 10: Sentiment Scoring Service
 
-- [ ] Implement weighted factor score
-- [ ] Implement label classifier: bullish, neutral, bearish
-- [ ] Implement confidence score logic
-- [ ] Add configurable weights file and validation
+- [x] Implement weighted factor score
+- [x] Implement label classifier: bullish, neutral, bearish
+- [x] Implement confidence score logic
+- [x] Add configurable weights file and validation
 
 ## Feature 11: Dashboard Aggregation API
 

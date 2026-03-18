@@ -276,6 +276,8 @@ Error envelope:
 - Route handlers stay thin: parse input, rate-limit, call adapters, return envelope responses.
 - Dune provider logic lives in `src/server/adapters/dune/client.ts`.
 - Feature engineering logic for aligned factors, imputation, rolling z-scores, and contribution rows lives in `src/server/services/feature-engineering/service.ts`.
+- Sentiment scoring logic for weighted composite score, regime label classification, confidence, and contributor ranking lives in `src/server/services/sentiment-scoring/service.ts`.
+- Sentiment factor weights and thresholds are configured in `src/server/services/sentiment-scoring/weights.json` and validated with Zod at load time.
 - Shared API helpers:
   - `src/server/api/envelope.ts` for success/error JSON contracts
   - `src/server/api/rate-limit.ts` for in-memory per-IP+path limiting
