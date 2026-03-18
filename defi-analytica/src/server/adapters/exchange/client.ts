@@ -252,8 +252,9 @@ function computeSeries(
 
   return points.map((point, index) => {
     let momentum: number | null = null;
-    if (index >= momentumWindow && points[index - momentumWindow]) {
-      const base = points[index - momentumWindow].close;
+    const momentumBasePoint = points[index - momentumWindow];
+    if (index >= momentumWindow && momentumBasePoint) {
+      const base = momentumBasePoint.close;
       if (base > 0) {
         momentum = point.close / base - 1;
       }
