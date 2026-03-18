@@ -93,7 +93,10 @@ export function FactorContributionCharts({ positive, negative }: FactorContribut
   };
 
   return (
-    <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section
+      id="factor-contribution-charts"
+      className="mt-8 scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+    >
       <h2 className="text-lg font-semibold text-slate-900">Factor Contribution Charts</h2>
       <p className="mt-1 text-xs text-slate-500">
         Horizontal bars showing top weighted directional contributors to the latest sentiment score.

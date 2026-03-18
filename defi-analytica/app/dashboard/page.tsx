@@ -233,9 +233,12 @@ export default async function DashboardPage() {
 
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
             <article className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+              <Link
+                href="/dashboard/sentiment#factor-contribution-charts"
+                className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 underline decoration-emerald-300 underline-offset-4"
+              >
                 Top Positive Contributors
-              </p>
+              </Link>
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
                 {overview.score.contributors.positive.length === 0 ? (
                   <li className="text-slate-500">No positive contributors available.</li>
@@ -256,9 +259,12 @@ export default async function DashboardPage() {
             </article>
 
             <article className="rounded-xl border border-rose-200 bg-rose-50/60 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
+              <Link
+                href="/dashboard/sentiment#factor-contribution-charts"
+                className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 underline decoration-rose-300 underline-offset-4"
+              >
                 Top Negative Contributors
-              </p>
+              </Link>
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
                 {overview.score.contributors.negative.length === 0 ? (
                   <li className="text-slate-500">No negative contributors available.</li>
