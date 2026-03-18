@@ -43,6 +43,7 @@ export function LiveStatus({ asOf, freshnessSec, autoRefreshMs = 60_000 }: LiveS
 
   const parsedAsOfMs = Number.isFinite(Date.parse(asOf)) ? Date.parse(asOf) : null;
   const autoRefreshSec = Math.max(Math.floor(autoRefreshMs / 1_000), 10);
+  const autoRefreshIntervalMs = autoRefreshSec * 1_000;
 
   useEffect(() => {
     const clock = window.setInterval(() => {
@@ -56,15 +57,19 @@ export function LiveStatus({ asOf, freshnessSec, autoRefreshMs = 60_000 }: LiveS
 
   useEffect(() => {
     const autoRefresh = window.setInterval(() => {
+      if (isPending) {
+        return;
+      }
+
       startTransition(() => {
         router.refresh();
       });
-    }, autoRefreshMs);
+    }, autoRefreshIntervalMs);
 
     return () => {
       window.clearInterval(autoRefresh);
     };
-  }, [autoRefreshMs, router]);
+  }, [autoRefreshIntervalMs, isPending, router]);
 
   const dataAgeSec = useMemo(() => {
     if (parsedAsOfMs === null) {

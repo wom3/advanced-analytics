@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 
-import { buildDashboardOverview } from "@/src/server/services/dashboard/service";
+import type { ApiSuccess } from "@/src/server/api/envelope";
+import type { DashboardOverviewResult } from "@/src/server/services/dashboard/service";
 
 import { LiveStatus } from "./live-status";
 import { TrendWidgets } from "./trend-widgets";
@@ -47,14 +49,37 @@ export const metadata = {
   description: "KPI dashboard for sentiment-aware crypto analytics.",
 };
 
-export default async function DashboardPage() {
-  const overview = await buildDashboardOverview({
+async function loadOverview(): Promise<DashboardOverviewResult> {
+  const params = new URLSearchParams({
     mode: "live",
     asset: "bitcoin",
     chain: "Ethereum",
     interval: "1h",
-    points: 72,
+    points: "72",
   });
+
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  if (!host) {
+    throw new Error("Missing host header for dashboard overview request.");
+  }
+
+  const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
+  const url = `${proto}://${host}/api/v1/dashboard/overview?${params.toString()}`;
+  const response = await fetch(url, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to load dashboard overview.");
+  }
+
+  const envelope = (await response.json()) as ApiSuccess<DashboardOverviewResult>;
+  return envelope.data;
+}
+
+export default async function DashboardPage() {
+  const overview = await loadOverview();
 
   const uptimeProviders = overview.providerStatus.filter((provider) => provider.ok).length;
   const uptimePct = Math.round((uptimeProviders / overview.providerStatus.length) * 100);
