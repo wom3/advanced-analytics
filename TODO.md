@@ -84,7 +84,7 @@
 
 ## Feature 13: Sentiment Deep Dive Page
 
-- [ ] Build /dashboard/sentiment page
+- [x] Build /dashboard/sentiment page
 - [ ] Add factor contribution charts
 - [ ] Add regime history timeline chart
 - [ ] Add confidence trend chart

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -132,7 +134,15 @@ export function TrendWidgets({ points }: TrendWidgetsProps) {
   return (
     <section className="mt-8 grid gap-4 xl:grid-cols-2">
       <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Sentiment Score Trend</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-900">Sentiment Score Trend</h2>
+          <Link
+            href="/dashboard/sentiment"
+            className="text-xs font-medium text-sky-700 underline decoration-sky-300 underline-offset-4"
+          >
+            Open deep dive
+          </Link>
+        </div>
         <p className="mt-1 text-xs text-slate-500">
           Rolling composite sentiment with bullish and bearish threshold overlays.
         </p>

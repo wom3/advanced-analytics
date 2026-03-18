@@ -168,7 +168,15 @@ export default async function DashboardPage() {
         />
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
-          <h2 className="text-lg font-semibold text-slate-900">Sentiment State Panel</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-900">Sentiment State Panel</h2>
+            <Link
+              href="/dashboard/sentiment"
+              className="text-xs font-medium text-sky-700 underline decoration-sky-300 underline-offset-4"
+            >
+              Open deep dive
+            </Link>
+          </div>
           <p className="mt-1 text-xs text-slate-500">
             Current regime, confidence band, and strongest directional contributors.
           </p>
