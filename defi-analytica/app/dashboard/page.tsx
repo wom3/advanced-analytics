@@ -127,9 +127,12 @@ export default async function DashboardPage() {
           </article>
 
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+            <Link
+              href="/dashboard/sentiment#confidence-trend-chart"
+              className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
+            >
               Confidence
-            </p>
+            </Link>
             <p className="mt-3 text-4xl font-semibold text-slate-900">
               {formatPercent(overview.score.confidence * 100, 1)}
             </p>
@@ -168,16 +171,27 @@ export default async function DashboardPage() {
         />
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
-          <h2 className="text-lg font-semibold text-slate-900">Sentiment State Panel</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-900">Sentiment State Panel</h2>
+            <Link
+              href="/dashboard/sentiment"
+              className="text-xs font-medium text-sky-700 underline decoration-sky-300 underline-offset-4"
+            >
+              Open deep dive
+            </Link>
+          </div>
           <p className="mt-1 text-xs text-slate-500">
             Current regime, confidence band, and strongest directional contributors.
           </p>
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <article className="rounded-xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+              <Link
+                href="/dashboard/sentiment#regime-history-timeline"
+                className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
+              >
                 Regime State
-              </p>
+              </Link>
               <div
                 className={`mt-3 inline-flex rounded-full border px-2 py-1 text-xs font-semibold uppercase ${cardTone(overview.score.label)}`}
               >
@@ -192,9 +206,12 @@ export default async function DashboardPage() {
             </article>
 
             <article className="rounded-xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+              <Link
+                href="/dashboard/sentiment#confidence-trend-chart"
+                className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
+              >
                 Confidence Band
-              </p>
+              </Link>
               <p className="mt-3 text-2xl font-semibold text-slate-900">
                 {formatPercent(overview.score.confidence * 100, 1)}
               </p>
@@ -225,9 +242,12 @@ export default async function DashboardPage() {
 
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
             <article className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+              <Link
+                href="/dashboard/sentiment#factor-contribution-charts"
+                className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 underline decoration-emerald-300 underline-offset-4"
+              >
                 Top Positive Contributors
-              </p>
+              </Link>
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
                 {overview.score.contributors.positive.length === 0 ? (
                   <li className="text-slate-500">No positive contributors available.</li>
@@ -248,9 +268,12 @@ export default async function DashboardPage() {
             </article>
 
             <article className="rounded-xl border border-rose-200 bg-rose-50/60 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
+              <Link
+                href="/dashboard/sentiment#factor-contribution-charts"
+                className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 underline decoration-rose-300 underline-offset-4"
+              >
                 Top Negative Contributors
-              </p>
+              </Link>
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
                 {overview.score.contributors.negative.length === 0 ? (
                   <li className="text-slate-500">No negative contributors available.</li>
