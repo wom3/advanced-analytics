@@ -153,7 +153,7 @@ export async function getFearGreedLatest(): Promise<AlternativeFngPoint> {
     );
   }
 
-  return toPublicPoint(parsed[0]);
+  return toPublicPoint(parsed[0]!);
 }
 
 export async function getFearGreedHistory(options?: {

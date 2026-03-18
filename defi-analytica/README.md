@@ -46,6 +46,7 @@ Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream a
 - `npm run dev` - start local dev server
 - `npm run build` - production build
 - `npm run start` - run built app
+- `npm test` - run unit tests with the Node.js test runner (`tsx --test`)
 - `npm run lint` - ESLint with zero warnings allowed
 - `npm run lint:fix` - auto-fix lint issues
 - `npm run format` - format repository files
@@ -274,6 +275,7 @@ Error envelope:
 - API middleware in `proxy.ts` injects `x-request-id` for `/api/v1/*` and logs request receipt.
 - Route handlers stay thin: parse input, rate-limit, call adapters, return envelope responses.
 - Dune provider logic lives in `src/server/adapters/dune/client.ts`.
+- Feature engineering logic for aligned factors, imputation, rolling z-scores, and contribution rows lives in `src/server/services/feature-engineering/service.ts`.
 - Shared API helpers:
   - `src/server/api/envelope.ts` for success/error JSON contracts
   - `src/server/api/rate-limit.ts` for in-memory per-IP+path limiting

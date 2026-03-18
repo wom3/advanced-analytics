@@ -10,6 +10,7 @@ API-first crypto analytics platform that combines:
 
 - Active implementation lives in `defi-analytica/` (Next.js App Router + TypeScript strict mode).
 - Implemented provider routes currently cover Dune, DefiLlama, CoinGecko, and Alternative.me, plus an optional exchange microstructure route behind a feature flag.
+- Feature 09 is implemented in `defi-analytica/src/server/services/feature-engineering/service.ts` with time alignment, imputation, rolling z-score normalization, and per-timestamp factor contribution output.
 - Product requirements are documented in `requirements.md`.
 - Feature-by-feature implementation plan is tracked in `TODO.md`.
 

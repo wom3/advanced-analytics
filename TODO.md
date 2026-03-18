@@ -56,10 +56,10 @@
 
 ## Feature 09: Feature Engineering Service
 
-- [ ] Build time alignment across provider data
-- [ ] Build rolling z-score normalization pipeline
-- [ ] Build missing-data handling and imputation rules
-- [ ] Emit factor contribution table per timestamp
+- [x] Build time alignment across provider data
+- [x] Build rolling z-score normalization pipeline
+- [x] Build missing-data handling and imputation rules
+- [x] Emit factor contribution table per timestamp
 
 ## Feature 10: Sentiment Scoring Service
 
