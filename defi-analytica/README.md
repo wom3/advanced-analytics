@@ -11,6 +11,7 @@ From this directory:
 ```bash
 npm i
 cp .env.example .env.local
+npm run infra:up
 npm run dev
 ```
 
@@ -23,6 +24,8 @@ Create `.env.local` (or `.env`) with:
 ```env
 NEXT_PUBLIC_APP_NAME=defi-analytica
 DUNE_API_KEY=your_key_here
+DATABASE_URL=postgresql://analytics:analytics@localhost:5433/analytics
+REDIS_URL=redis://localhost:6379
 ENABLE_EXCHANGE_SIGNALS=false
 EXCHANGE_ALLOWED_SYMBOLS=BTCUSDT,ETHUSDT,SOLUSDT
 ```
@@ -31,6 +34,8 @@ Notes:
 
 - `DUNE_API_KEY` is required for Dune-backed endpoints.
 - In development, Dune key lookup prefers `.env.local` then `.env` before runtime env vars.
+- `DATABASE_URL` points to PostgreSQL (local default uses Docker Compose service).
+- `REDIS_URL` points to Redis cache (local default uses Docker Compose service).
 - `ENABLE_EXCHANGE_SIGNALS=true` enables the optional exchange microstructure endpoint.
 - `EXCHANGE_ALLOWED_SYMBOLS` controls which symbols can be queried for microstructure data.
 
@@ -45,6 +50,74 @@ Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream a
 - `npm run lint:fix` - auto-fix lint issues
 - `npm run format` - format repository files
 - `npm run format:check` - verify formatting
+- `npm run infra:up` - start local PostgreSQL + Redis via Docker Compose
+- `npm run infra:down` - stop local PostgreSQL + Redis
+- `npm run infra:logs` - tail PostgreSQL + Redis logs
+- `npm run prisma:generate` - generate Prisma Client
+- `npm run prisma:migrate:dev` - create/apply a local development migration
+- `npm run prisma:migrate:deploy` - apply committed migrations
+- `npm run prisma:studio` - open Prisma Studio UI
+- `npm run prisma:format` - format `prisma/schema.prisma`
+- `npm run cache:invalidate` - invalidate Redis API cache keys (optionally by group)
+
+## Local Data Infra (Docker Compose)
+
+From this directory:
+
+```bash
+npm run infra:up
+```
+
+Services started by `docker-compose.yml`:
+
+- PostgreSQL: `localhost:5433` (db/user/password: `analytics`)
+- Redis: `localhost:6379`
+
+Stop services:
+
+```bash
+npm run infra:down
+```
+
+## Prisma Setup (PostgreSQL)
+
+Prisma schema and migrations live in `prisma/`:
+
+- `prisma/schema.prisma`
+- `prisma/migrations/*`
+
+Typical local workflow:
+
+```bash
+npm run infra:up
+npm run prisma:generate
+npm run prisma:migrate:dev -- --name your_change_name
+```
+
+If `localhost:5433` is unavailable on your machine, update your local `DATABASE_URL` to a reachable PostgreSQL instance before running migrations.
+
+## Redis API Cache (Feature 08)
+
+Hot `/api/v1` responses use Redis cache-aside with endpoint-type TTLs.
+
+TTL policy:
+
+- `/api/v1/llama/metrics/:metric` -> 120s
+- `/api/v1/coingecko/market/:asset` -> 120s
+- `/api/v1/fng/latest` -> 60s
+- `/api/v1/fng/history` -> 300s
+
+Cache keys are prefixed with `aa:v1:http:` and include pathname + normalized query string.
+
+For scheduled refresh jobs, invalidate cache groups before/after refresh:
+
+```bash
+# invalidate all groups
+npm run cache:invalidate
+
+# invalidate selected groups
+REDIS_URL=redis://localhost:6379 npm run cache:invalidate -- fng.latest fng.history
+```
 
 ## Implemented API Endpoints
 

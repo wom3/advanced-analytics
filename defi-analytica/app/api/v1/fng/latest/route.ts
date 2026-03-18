@@ -7,6 +7,13 @@ import {
   AlternativeApiError,
   getFearGreedLatest,
 } from "@/src/server/adapters/alternative/client";
+import {
+  buildHttpCacheKey,
+  getCachedSuccessEnvelope,
+  setCachedSuccessEnvelope,
+  type CachedSuccessEnvelope,
+} from "@/src/server/cache/http-cache";
+import { CACHE_TTL_SECONDS } from "@/src/server/cache/policy";
 import { logApiError, logApiInfo, logApiWarn } from "@/src/server/observability/logger";
 
 export async function GET(request: NextRequest) {
@@ -40,6 +47,28 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const cacheKey = buildHttpCacheKey(request.nextUrl);
+    const cached =
+      await getCachedSuccessEnvelope<Awaited<ReturnType<typeof getFearGreedLatest>>>(cacheKey);
+    if (cached) {
+      logApiInfo({
+        event: "api.fng.latest.cache_hit",
+        requestId,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        status: 200,
+        durationMs: Date.now() - startedAt,
+      });
+
+      const response = jsonSuccess({
+        ...cached,
+        requestId,
+      });
+      response.headers.set("x-ratelimit-remaining", String(rl.remaining));
+      response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
+      return response;
+    }
+
     const latest = await getFearGreedLatest();
 
     logApiInfo({
@@ -55,16 +84,22 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const response = jsonSuccess({
+    const successPayload: CachedSuccessEnvelope<typeof latest> = {
       source: "alternative",
       asOf: latest.timestamp,
       freshnessSec: latest.timeUntilUpdateSec ?? 0,
-      requestId,
       data: latest,
       meta: {
         route: "/api/v1/fng/latest",
         attribution: ALTERNATIVE_ATTRIBUTION,
       },
+    };
+
+    await setCachedSuccessEnvelope(cacheKey, successPayload, CACHE_TTL_SECONDS["fng.latest"]);
+
+    const response = jsonSuccess({
+      ...successPayload,
+      requestId,
     });
     response.headers.set("x-ratelimit-remaining", String(rl.remaining));
     response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));

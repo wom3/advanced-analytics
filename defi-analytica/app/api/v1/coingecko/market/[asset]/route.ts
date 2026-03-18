@@ -6,6 +6,13 @@ import {
   CoinGeckoApiError,
   getCoinGeckoMarketSeries,
 } from "@/src/server/adapters/coingecko/client";
+import {
+  buildHttpCacheKey,
+  getCachedSuccessEnvelope,
+  setCachedSuccessEnvelope,
+  type CachedSuccessEnvelope,
+} from "@/src/server/cache/http-cache";
+import { CACHE_TTL_SECONDS } from "@/src/server/cache/policy";
 import { logApiError, logApiInfo, logApiWarn } from "@/src/server/observability/logger";
 
 function parseAsset(raw: string): string {
@@ -100,6 +107,30 @@ export async function GET(request: NextRequest, context: { params: Promise<{ ass
       throw new CoinGeckoApiError("since must be less than or equal to until.", 400, false);
     }
 
+    const cacheKey = buildHttpCacheKey(request.nextUrl);
+    const cached =
+      await getCachedSuccessEnvelope<Awaited<ReturnType<typeof getCoinGeckoMarketSeries>>>(
+        cacheKey
+      );
+    if (cached) {
+      logApiInfo({
+        event: "api.coingecko.market.cache_hit",
+        requestId,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        status: 200,
+        durationMs: Date.now() - startedAt,
+      });
+
+      const response = jsonSuccess({
+        ...cached,
+        requestId,
+      });
+      response.headers.set("x-ratelimit-remaining", String(rl.remaining));
+      response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
+      return response;
+    }
+
     const options: Record<string, string | number | undefined> = {};
     if (interval !== undefined) options["interval"] = interval;
     if (sinceSec !== undefined) options["sinceSec"] = sinceSec;
@@ -122,16 +153,22 @@ export async function GET(request: NextRequest, context: { params: Promise<{ ass
       meta: { asset, points: result.points.length },
     });
 
-    const response = jsonSuccess({
+    const successPayload: CachedSuccessEnvelope<typeof result> = {
       source: "coingecko",
       asOf,
       freshnessSec: 0,
-      requestId,
       data: result,
       meta: {
         route: "/api/v1/coingecko/market/:asset",
         asset,
       },
+    };
+
+    await setCachedSuccessEnvelope(cacheKey, successPayload, CACHE_TTL_SECONDS["coingecko.market"]);
+
+    const response = jsonSuccess({
+      ...successPayload,
+      requestId,
     });
     response.headers.set("x-ratelimit-remaining", String(rl.remaining));
     response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));

@@ -8,7 +8,18 @@ import {
   AlternativeApiError,
   getFearGreedHistory,
 } from "@/src/server/adapters/alternative/client";
+import {
+  buildHttpCacheKey,
+  getCachedSuccessEnvelope,
+  setCachedSuccessEnvelope,
+  type CachedSuccessEnvelope,
+} from "@/src/server/cache/http-cache";
+import { CACHE_TTL_SECONDS } from "@/src/server/cache/policy";
 import { logApiError, logApiInfo, logApiWarn } from "@/src/server/observability/logger";
+
+type FearGreedHistoryData = {
+  points: Awaited<ReturnType<typeof getFearGreedHistory>>;
+};
 
 function parseOptionalTimestamp(value: string | null, name: string): number | undefined {
   if (!value || !value.trim()) {
@@ -97,6 +108,27 @@ export async function GET(request: NextRequest) {
       throw new AlternativeApiError("since must be less than or equal to until.", 400, false);
     }
 
+    const cacheKey = buildHttpCacheKey(request.nextUrl);
+    const cached = await getCachedSuccessEnvelope<FearGreedHistoryData>(cacheKey);
+    if (cached) {
+      logApiInfo({
+        event: "api.fng.history.cache_hit",
+        requestId,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        status: 200,
+        durationMs: Date.now() - startedAt,
+      });
+
+      const response = jsonSuccess({
+        ...cached,
+        requestId,
+      });
+      response.headers.set("x-ratelimit-remaining", String(rl.remaining));
+      response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
+      return response;
+    }
+
     const points = await getFearGreedHistory({
       ...(limit !== undefined ? { limit } : {}),
       ...(sinceSec !== undefined ? { sinceSec } : {}),
@@ -118,11 +150,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const response = jsonSuccess({
+    const successPayload: CachedSuccessEnvelope<FearGreedHistoryData> = {
       source: "alternative",
       asOf,
       freshnessSec: 0,
-      requestId,
       data: {
         points,
       },
@@ -130,6 +161,13 @@ export async function GET(request: NextRequest) {
         route: "/api/v1/fng/history",
         attribution: ALTERNATIVE_ATTRIBUTION,
       },
+    };
+
+    await setCachedSuccessEnvelope(cacheKey, successPayload, CACHE_TTL_SECONDS["fng.history"]);
+
+    const response = jsonSuccess({
+      ...successPayload,
+      requestId,
     });
     response.headers.set("x-ratelimit-remaining", String(rl.remaining));
     response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));

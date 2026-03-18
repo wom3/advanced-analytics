@@ -7,6 +7,13 @@ import {
   LlamaApiError,
   type LlamaMetric,
 } from "@/src/server/adapters/defillama/client";
+import {
+  buildHttpCacheKey,
+  getCachedSuccessEnvelope,
+  setCachedSuccessEnvelope,
+  type CachedSuccessEnvelope,
+} from "@/src/server/cache/http-cache";
+import { CACHE_TTL_SECONDS } from "@/src/server/cache/policy";
 import { logApiError, logApiInfo, logApiWarn } from "@/src/server/observability/logger";
 
 function parseMetric(raw: string): LlamaMetric {
@@ -96,6 +103,28 @@ export async function GET(request: NextRequest, context: { params: Promise<{ met
       throw new LlamaApiError("since must be less than or equal to until.", 400, false);
     }
 
+    const cacheKey = buildHttpCacheKey(request.nextUrl);
+    const cached =
+      await getCachedSuccessEnvelope<Awaited<ReturnType<typeof getLlamaMetricSeries>>>(cacheKey);
+    if (cached) {
+      logApiInfo({
+        event: "api.llama.metrics.cache_hit",
+        requestId,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        status: 200,
+        durationMs: Date.now() - startedAt,
+      });
+
+      const response = jsonSuccess({
+        ...cached,
+        requestId,
+      });
+      response.headers.set("x-ratelimit-remaining", String(rl.remaining));
+      response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
+      return response;
+    }
+
     const options: Record<string, string | number | undefined> = {};
     if (chain !== undefined) options["chain"] = chain;
     if (protocol !== undefined) options["protocol"] = protocol;
@@ -125,11 +154,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ met
       },
     });
 
-    const response = jsonSuccess({
+    const successPayload: CachedSuccessEnvelope<typeof result> = {
       source: "defillama",
       asOf,
       freshnessSec: 0,
-      requestId,
       data: result,
       meta: {
         route: "/api/v1/llama/metrics/:metric",
@@ -137,6 +165,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ met
         chain: chain ?? null,
         protocol: protocol ?? null,
       },
+    };
+
+    await setCachedSuccessEnvelope(cacheKey, successPayload, CACHE_TTL_SECONDS["llama.metrics"]);
+
+    const response = jsonSuccess({
+      ...successPayload,
+      requestId,
     });
     response.headers.set("x-ratelimit-remaining", String(rl.remaining));
     response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));

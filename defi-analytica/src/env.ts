@@ -4,6 +4,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   NEXT_PUBLIC_APP_NAME: z.string().trim().min(1).default("defi-analytica"),
   DUNE_API_KEY: z.string().trim().min(1).optional(),
+  DATABASE_URL: z.string().trim().min(1).optional(),
+  REDIS_URL: z.string().trim().min(1).optional(),
   ENABLE_EXCHANGE_SIGNALS: z.enum(["true", "false"]).default("false"),
   EXCHANGE_ALLOWED_SYMBOLS: z.string().trim().default("BTCUSDT,ETHUSDT,SOLUSDT"),
 });

@@ -61,8 +61,13 @@ From the repository root:
 cd defi-analytica
 npm i
 cp .env.example .env.local
+npm run infra:up
 npm run dev
 ```
+
+Local infrastructure (PostgreSQL + Redis) is defined in `defi-analytica/docker-compose.yml`.
+
+Prisma ORM is configured in `defi-analytica/prisma/` and uses `DATABASE_URL` from environment variables.
 
 Create `defi-analytica/.env.local`:
 
