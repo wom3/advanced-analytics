@@ -149,7 +149,7 @@ Base: `/api/v1`
 
 ## Implemented Frontend Pages
 
-- `GET /dashboard` - KPI cards view (Feature 12 task 1)
+- `GET /dashboard` - KPI cards, trend widgets, sentiment state panel, and auto-refresh freshness warnings (Feature 12)
 
 ## How to Check Endpoints
 
@@ -279,13 +279,13 @@ curl -s "http://localhost:3000/api/v1/sentiment/history?mode=live&interval=1h&po
 curl -s "http://localhost:3000/api/v1/dashboard/overview?mode=live&interval=1h&points=72&asset=bitcoin&chain=Ethereum" | jq
 ```
 
-### Check Dashboard Core Page (Feature 12 tasks 1, 2, and 3)
+### Check Dashboard Core Page (Feature 12 complete)
 
 ```bash
 open "http://localhost:3000/dashboard"
 ```
 
-The current `/dashboard` implementation includes KPI cards, Chart.js trend widgets, and a sentiment state panel. Auto-refresh warning behavior is intentionally left for the remaining Feature 12 tasks.
+The current `/dashboard` implementation includes KPI cards, Chart.js trend widgets, sentiment state panel, and automatic refresh with stale-data warning states.
 
 ### Response Contracts
 

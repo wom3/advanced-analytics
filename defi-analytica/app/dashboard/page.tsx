@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { buildDashboardOverview } from "@/src/server/services/dashboard/service";
 
+import { LiveStatus } from "./live-status";
 import { TrendWidgets } from "./trend-widgets";
 
 function formatNumber(value: number | null, digits = 2): string {
@@ -82,15 +83,7 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-xs text-slate-600 shadow-sm backdrop-blur">
-            <p>
-              As of: <span className="font-medium text-slate-800">{overview.asOf}</span>
-            </p>
-            <p className="mt-1">
-              Freshness:{" "}
-              <span className="font-medium text-slate-800">{overview.freshnessSec}s</span>
-            </p>
-          </div>
+          <LiveStatus asOf={overview.asOf} freshnessSec={overview.freshnessSec} />
         </header>
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -286,7 +279,7 @@ export default async function DashboardPage() {
         </section>
 
         <footer className="mt-8 text-sm text-slate-600">
-          Next tasks in Feature 12 remain open: charts, sentiment panel, and auto-refresh warnings.
+          Feature 12 dashboard core is now complete with live status refresh handling.
           <Link
             href="/"
             className="ml-2 font-medium text-slate-900 underline decoration-slate-300 underline-offset-4"
