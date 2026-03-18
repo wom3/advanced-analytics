@@ -5,6 +5,9 @@ const GROUP_PREFIXES = {
   "coingecko.market": ["aa:v1:http:/api/v1/coingecko/market/"],
   "fng.latest": ["aa:v1:http:/api/v1/fng/latest"],
   "fng.history": ["aa:v1:http:/api/v1/fng/history"],
+  "sentiment.score": ["aa:v1:http:/api/v1/sentiment/score"],
+  "sentiment.history": ["aa:v1:http:/api/v1/sentiment/history"],
+  "dashboard.overview": ["aa:v1:http:/api/v1/dashboard/overview"],
 };
 
 const ALL_GROUPS = Object.keys(GROUP_PREFIXES);

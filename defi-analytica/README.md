@@ -2,7 +2,7 @@
 
 API-first crypto analytics app built with Next.js App Router and TypeScript strict mode.
 
-Current implementation provides Dune and DefiLlama-backed `/api/v1` routes with normalized response envelopes, request tracing, and per-endpoint rate limiting.
+Current implementation provides Dune, DefiLlama, CoinGecko, Alternative.me, and sentiment/dashboard aggregation `/api/v1` routes with normalized response envelopes, request tracing, and per-endpoint rate limiting.
 
 ## Quick Start
 
@@ -107,6 +107,9 @@ TTL policy:
 - `/api/v1/coingecko/market/:asset` -> 120s
 - `/api/v1/fng/latest` -> 60s
 - `/api/v1/fng/history` -> 300s
+- `/api/v1/sentiment/score` -> 60s
+- `/api/v1/sentiment/history` -> 180s
+- `/api/v1/dashboard/overview` -> 60s
 
 Cache keys are prefixed with `aa:v1:http:` and include pathname + normalized query string.
 
@@ -120,6 +123,12 @@ npm run cache:invalidate
 REDIS_URL=redis://localhost:6379 npm run cache:invalidate -- fng.latest fng.history
 ```
 
+You can also invalidate Feature 11 groups:
+
+```bash
+REDIS_URL=redis://localhost:6379 npm run cache:invalidate -- sentiment.score sentiment.history dashboard.overview
+```
+
 ## Implemented API Endpoints
 
 Base: `/api/v1`
@@ -130,6 +139,9 @@ Base: `/api/v1`
 - `GET /api/v1/fng/latest`
 - `GET /api/v1/fng/history`
 - `GET /api/v1/market/microstructure/:symbol` (optional; feature-flagged)
+- `GET /api/v1/sentiment/score`
+- `GET /api/v1/sentiment/history`
+- `GET /api/v1/dashboard/overview`
 - `POST /api/v1/dune/queries/:queryId/execute`
 - `GET /api/v1/dune/executions/:executionId/status`
 - `GET /api/v1/dune/executions/:executionId/results`
@@ -245,6 +257,24 @@ Notes:
 - Dune checks require `DUNE_API_KEY` in `.env.local` or `.env`.
 - The response includes `x-request-id` and rate-limit headers on every endpoint.
 
+### Check Sentiment and Dashboard Aggregation Endpoints (Feature 11)
+
+Demo-mode smoke checks (deterministic, does not require upstream providers):
+
+```bash
+curl -s "http://localhost:3000/api/v1/sentiment/score?mode=demo&interval=1h&points=72&asset=bitcoin&chain=Ethereum" | jq
+curl -s "http://localhost:3000/api/v1/sentiment/history?mode=demo&interval=1h&points=72&asset=bitcoin&chain=Ethereum" | jq
+curl -s "http://localhost:3000/api/v1/dashboard/overview?mode=demo&interval=1h&points=72&asset=bitcoin&chain=Ethereum" | jq
+```
+
+Live-mode checks (uses upstream providers with fallback-to-synthetic if unavailable):
+
+```bash
+curl -s "http://localhost:3000/api/v1/sentiment/score?mode=live&interval=1h&points=72&asset=bitcoin&chain=Ethereum" | jq
+curl -s "http://localhost:3000/api/v1/sentiment/history?mode=live&interval=1h&points=72&asset=bitcoin&chain=Ethereum" | jq
+curl -s "http://localhost:3000/api/v1/dashboard/overview?mode=live&interval=1h&points=72&asset=bitcoin&chain=Ethereum" | jq
+```
+
 ### Response Contracts
 
 Success envelope:
@@ -278,6 +308,7 @@ Error envelope:
 - Feature engineering logic for aligned factors, imputation, rolling z-scores, and contribution rows lives in `src/server/services/feature-engineering/service.ts`.
 - Sentiment scoring logic for weighted composite score, regime label classification, confidence, and contributor ranking lives in `src/server/services/sentiment-scoring/service.ts`.
 - Sentiment factor weights and thresholds are configured in `src/server/services/sentiment-scoring/weights.json` and validated with Zod at load time.
+- Dashboard aggregation logic for blending provider factors, emitting provider-status metadata, and serving sentiment/dashboard payloads lives in `src/server/services/dashboard/service.ts`.
 - Shared API helpers:
   - `src/server/api/envelope.ts` for success/error JSON contracts
   - `src/server/api/rate-limit.ts` for in-memory per-IP+path limiting

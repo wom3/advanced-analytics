@@ -5,6 +5,7 @@ import { engineerFeatureTable } from "@/src/server/services/feature-engineering/
 import {
   getDefaultSentimentWeightsConfig,
   parseSentimentWeightsConfig,
+  scoreSentimentHistoryFromFeatureTable,
   scoreSentimentFromFeatureTable,
 } from "@/src/server/services/sentiment-scoring/service";
 
@@ -322,4 +323,45 @@ test("exposes validated default weights config", () => {
   assert.equal(config.version, 1);
   assert.equal(config.labelThresholds.bullish, 1);
   assert.equal(config.labelThresholds.bearish, -1);
+});
+
+test("computes sentiment history points from feature table rows", () => {
+  const featureTable = engineerFeatureTable(
+    {
+      factors: [
+        {
+          factorId: "factor_growth",
+          source: "defillama",
+          points: [
+            { timestamp: "2026-01-01T00:00:00.000Z", value: 100 },
+            { timestamp: "2026-01-01T01:00:00.000Z", value: 120 },
+            { timestamp: "2026-01-01T02:00:00.000Z", value: 150 },
+          ],
+        },
+        {
+          factorId: "factor_decline",
+          source: "coingecko",
+          points: [
+            { timestamp: "2026-01-01T00:00:00.000Z", value: 180 },
+            { timestamp: "2026-01-01T01:00:00.000Z", value: 160 },
+            { timestamp: "2026-01-01T02:00:00.000Z", value: 140 },
+          ],
+        },
+      ],
+    },
+    {
+      rollingWindow: 3,
+      minPeriods: 2,
+      timelineMode: "union",
+    }
+  );
+
+  const history = scoreSentimentHistoryFromFeatureTable(featureTable);
+
+  assert.equal(history.length, 3);
+  assert.equal(history[0]!.timestamp, "2026-01-01T00:00:00.000Z");
+  assert.equal(history[2]!.timestamp, "2026-01-01T02:00:00.000Z");
+  assert.equal(history[0]!.label, "neutral");
+  assert.ok(Number.isFinite(history[2]!.score));
+  assert.ok(history[2]!.confidence >= 0 && history[2]!.confidence <= 1);
 });

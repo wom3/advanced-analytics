@@ -70,10 +70,10 @@
 
 ## Feature 11: Dashboard Aggregation API
 
-- [ ] Implement /api/v1/dashboard/overview
-- [ ] Implement /api/v1/sentiment/score
-- [ ] Implement /api/v1/sentiment/history
-- [ ] Add freshness metadata and provider status block
+- [x] Implement /api/v1/dashboard/overview
+- [x] Implement /api/v1/sentiment/score
+- [x] Implement /api/v1/sentiment/history
+- [x] Add freshness metadata and provider status block
 
 ## Feature 12: Frontend Dashboard Core
 
