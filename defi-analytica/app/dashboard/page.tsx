@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { buildDashboardOverview } from "@/src/server/services/dashboard/service";
 
+import { TrendWidgets } from "./trend-widgets";
+
 function formatNumber(value: number | null, digits = 2): string {
   if (value === null || !Number.isFinite(value)) {
     return "N/A";
@@ -127,6 +129,14 @@ export default async function DashboardPage() {
             <p className="mt-3 text-xs text-slate-500">Asset: {overview.market.asset}</p>
           </article>
         </section>
+
+        <TrendWidgets
+          points={overview.history.map((point) => ({
+            timestamp: point.timestamp,
+            score: point.score,
+            confidence: point.confidence,
+          }))}
+        />
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm backdrop-blur">
           <h2 className="text-lg font-semibold text-slate-900">Provider Status</h2>

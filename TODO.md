@@ -78,7 +78,7 @@
 ## Feature 12: Frontend Dashboard Core
 
 - [x] Build /dashboard page with KPI cards
-- [ ] Build trend chart widgets with Chart.js
+- [x] Build trend chart widgets with Chart.js
 - [ ] Build sentiment state panel
 - [ ] Add auto-refresh and stale-data warnings
 
