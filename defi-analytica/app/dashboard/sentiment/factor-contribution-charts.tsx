@@ -64,20 +64,22 @@ function toPercent(value: number): number {
 }
 
 function colorForPositive(value: number): string {
-  if (value >= 0.8) {
+  const normalized = value / 100;
+  if (normalized >= 0.8) {
     return "rgba(5, 150, 105, 0.9)";
   }
-  if (value >= 0.4) {
+  if (normalized >= 0.4) {
     return "rgba(16, 185, 129, 0.72)";
   }
   return "rgba(110, 231, 183, 0.65)";
 }
 
 function colorForNegative(value: number): string {
-  if (value <= -0.8) {
+  const normalized = value / 100;
+  if (normalized <= -0.8) {
     return "rgba(190, 18, 60, 0.9)";
   }
-  if (value <= -0.4) {
+  if (normalized <= -0.4) {
     return "rgba(244, 63, 94, 0.72)";
   }
   return "rgba(253, 164, 175, 0.65)";

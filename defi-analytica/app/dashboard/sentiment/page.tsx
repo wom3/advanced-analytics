@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 
 import type { ApiSuccess } from "@/src/server/api/envelope";
 import type {
@@ -48,27 +47,15 @@ function cardTone(label: "bullish" | "neutral" | "bearish"): string {
   return "text-amber-700 border-amber-300 bg-amber-50";
 }
 
-async function getBaseUrl(): Promise<string> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  if (!host) {
-    throw new Error("Missing host header for sentiment deep dive request.");
-  }
-
-  const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
-  return `${proto}://${host}`;
-}
-
 async function loadSentimentData(): Promise<{
   score: SentimentScoreResult;
   history: SentimentHistoryPoint[];
 }> {
-  const baseUrl = await getBaseUrl();
   const params = new URLSearchParams(SENTIMENT_PARAMS);
 
   const [scoreRes, historyRes] = await Promise.all([
-    fetch(`${baseUrl}/api/v1/sentiment/score?${params.toString()}`, { cache: "no-store" }),
-    fetch(`${baseUrl}/api/v1/sentiment/history?${params.toString()}`, { cache: "no-store" }),
+    fetch(`/api/v1/sentiment/score?${params.toString()}`, { cache: "no-store" }),
+    fetch(`/api/v1/sentiment/history?${params.toString()}`, { cache: "no-store" }),
   ]);
 
   if (!scoreRes.ok || !historyRes.ok) {
@@ -178,7 +165,7 @@ export default async function DashboardSentimentPage() {
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Recent Sentiment Observations</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Latest 10 points from sentiment history. Chart-focused tasks remain open in Feature 13.
+            Latest 10 points from sentiment history for quick regime and confidence verification.
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-sm">

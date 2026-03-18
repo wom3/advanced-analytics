@@ -3,6 +3,7 @@
 import {
   CategoryScale,
   Chart as ChartJS,
+  Filler,
   Legend,
   LineElement,
   LinearScale,
@@ -18,7 +19,7 @@ import type {
   SentimentLabel,
 } from "@/src/server/services/sentiment-scoring/service";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
 type RegimeHistoryTimelineChartProps = {
   points: SentimentHistoryPoint[];
@@ -64,6 +65,10 @@ const chartOptions: ChartOptions<"line"> = {
       display: false,
     },
     tooltip: {
+      filter(context) {
+        const value = context.parsed.y;
+        return typeof value === "number" && Number.isFinite(value) && valueToRegime.has(value);
+      },
       callbacks: {
         label(context) {
           const value = context.parsed.y ?? Number.NaN;
