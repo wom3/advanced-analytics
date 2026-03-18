@@ -9,7 +9,7 @@ API-first crypto analytics platform that combines:
 ## Current Status
 
 - Active implementation lives in `defi-analytica/` (Next.js App Router + TypeScript strict mode).
-- Implemented provider routes currently cover Dune and DefiLlama under `/api/v1/**`.
+- Implemented provider routes currently cover Dune, DefiLlama, CoinGecko, and Alternative.me, plus an optional exchange microstructure route behind a feature flag.
 - Product requirements are documented in `requirements.md`.
 - Feature-by-feature implementation plan is tracked in `TODO.md`.
 
@@ -93,6 +93,12 @@ curl -s "http://localhost:3000/api/v1/llama/metrics/tvl?chain=Ethereum&interval=
 curl -s "http://localhost:3000/api/v1/coingecko/market/bitcoin?interval=1d" | jq
 curl -s "http://localhost:3000/api/v1/fng/latest" | jq
 curl -s "http://localhost:3000/api/v1/fng/history?limit=30" | jq
+```
+
+Optional exchange microstructure check (requires `ENABLE_EXCHANGE_SIGNALS=true`):
+
+```bash
+curl -s "http://localhost:3000/api/v1/market/microstructure/BTCUSDT?interval=1h&limit=200" | jq
 ```
 
 Dune flow check (requires `DUNE_API_KEY` in `defi-analytica/.env.local`):

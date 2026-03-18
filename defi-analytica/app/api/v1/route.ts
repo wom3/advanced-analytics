@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
         "/api/v1/coingecko/market/:asset",
         "/api/v1/fng/latest",
         "/api/v1/fng/history",
+        "/api/v1/market/microstructure/:symbol",
         "/api/v1/dune/queries/:queryId/execute",
         "/api/v1/dune/executions/:executionId/status",
         "/api/v1/dune/executions/:executionId/results",

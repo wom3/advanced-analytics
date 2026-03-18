@@ -26,6 +26,8 @@ NEXT_PUBLIC_APP_NAME=defi-analytica
 DUNE_API_KEY=your_key_here
 DATABASE_URL=postgresql://analytics:analytics@localhost:5433/analytics
 REDIS_URL=redis://localhost:6379
+ENABLE_EXCHANGE_SIGNALS=false
+EXCHANGE_ALLOWED_SYMBOLS=BTCUSDT,ETHUSDT,SOLUSDT
 ```
 
 Notes:
@@ -34,6 +36,8 @@ Notes:
 - In development, Dune key lookup prefers `.env.local` then `.env` before runtime env vars.
 - `DATABASE_URL` points to PostgreSQL (local default uses Docker Compose service).
 - `REDIS_URL` points to Redis cache (local default uses Docker Compose service).
+- `ENABLE_EXCHANGE_SIGNALS=true` enables the optional exchange microstructure endpoint.
+- `EXCHANGE_ALLOWED_SYMBOLS` controls which symbols can be queried for microstructure data.
 
 Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream advisories identified during this integration cycle).
 
@@ -124,6 +128,7 @@ Base: `/api/v1`
 - `GET /api/v1/coingecko/market/:asset`
 - `GET /api/v1/fng/latest`
 - `GET /api/v1/fng/history`
+- `GET /api/v1/market/microstructure/:symbol` (optional; feature-flagged)
 - `POST /api/v1/dune/queries/:queryId/execute`
 - `GET /api/v1/dune/executions/:executionId/status`
 - `GET /api/v1/dune/executions/:executionId/results`
@@ -187,6 +192,23 @@ History (limit + optional range filters):
 curl -s "http://localhost:3000/api/v1/fng/history?limit=30&since=1735689600" | jq
 ```
 
+### Check Optional Exchange Microstructure Endpoint
+
+Enable in `.env.local`:
+
+```env
+ENABLE_EXCHANGE_SIGNALS=true
+EXCHANGE_ALLOWED_SYMBOLS=BTCUSDT,ETHUSDT,SOLUSDT
+```
+
+Then query:
+
+```bash
+curl -s "http://localhost:3000/api/v1/market/microstructure/BTCUSDT?interval=1h&limit=200" | jq
+```
+
+The response includes OHLCV candlesticks plus computed `realizedVolatility` and `momentum` proxy fields.
+
 ### Check Dune Endpoints
 
 Execute a query (replace with your Dune query id):
@@ -228,7 +250,7 @@ Success envelope:
 
 ```json
 {
-  "source": "dune|defillama|internal",
+  "source": "dune|defillama|coingecko|alternative|exchange|internal",
   "asOf": "ISO timestamp",
   "freshnessSec": 0,
   "data": {},
@@ -243,7 +265,7 @@ Error envelope:
   "code": "MACHINE_READABLE_CODE",
   "message": "human-readable message",
   "retryable": true,
-  "provider": "dune|defillama|internal"
+  "provider": "dune|defillama|coingecko|alternative|exchange|internal"
 }
 ```
 

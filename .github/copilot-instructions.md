@@ -4,7 +4,7 @@
 
 - Active app lives in `defi-analytica/` (Next.js App Router + TypeScript strict mode).
 - API boundary is internal route handlers under `defi-analytica/app/api/v1/**`.
-- Provider-specific logic is isolated in adapters (`src/server/adapters/dune/client.ts`, `src/server/adapters/defillama/client.ts`, `src/server/adapters/coingecko/client.ts`, `src/server/adapters/alternative/client.ts`).
+- Provider-specific logic is isolated in adapters (`src/server/adapters/dune/client.ts`, `src/server/adapters/defillama/client.ts`, `src/server/adapters/coingecko/client.ts`, `src/server/adapters/alternative/client.ts`, `src/server/adapters/exchange/client.ts`).
 - Shared API contracts are centralized in `src/server/api/envelope.ts` and used by every route.
 - Local data infra for development is defined in `defi-analytica/docker-compose.yml` (PostgreSQL + Redis).
 - `requirements.md` and `TODO.md` describe planned providers/features; implement only what exists unless asked.
@@ -45,7 +45,7 @@
 - Format/check: `npm run format` / `npm run format:check`
 - Stop local infra: `npm run infra:down`
 - Tail local infra logs: `npm run infra:logs`
-- Environment template: `defi-analytica/.env.example` (`DUNE_API_KEY`, `DATABASE_URL`, `REDIS_URL`).
+- Environment template: `defi-analytica/.env.example` (`DUNE_API_KEY` needed for Dune-backed endpoints; persistence/cache use `DATABASE_URL` and `REDIS_URL`; optional exchange route gated by `ENABLE_EXCHANGE_SIGNALS`).
 
 ## Project-Specific Coding Rules
 
