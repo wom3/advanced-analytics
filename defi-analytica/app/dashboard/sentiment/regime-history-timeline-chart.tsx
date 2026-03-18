@@ -7,6 +7,7 @@ import {
   LineElement,
   LinearScale,
   PointElement,
+  type ScriptableLineSegmentContext,
   Tooltip,
   type ChartOptions,
 } from "chart.js";
@@ -119,16 +120,67 @@ export function RegimeHistoryTimelineChart({ points }: RegimeHistoryTimelineChar
   }
 
   const labels = points.map((point) => shortTimeLabel(point.timestamp));
+  const bullishCount = points.filter((point) => point.label === "bullish").length;
+  const neutralCount = points.filter((point) => point.label === "neutral").length;
+  const bearishCount = points.filter((point) => point.label === "bearish").length;
+  const transitions = points.reduce((count, point, index) => {
+    if (index === 0) {
+      return 0;
+    }
+    return point.label === points[index - 1]?.label ? count : count + 1;
+  }, 0);
+
   const data = {
     labels,
     datasets: [
       {
+        label: "Bullish Zone",
+        data: points.map(() => 1),
+        borderWidth: 0,
+        pointRadius: 0,
+        fill: {
+          target: {
+            value: 0.2,
+          },
+          above: "rgba(16, 185, 129, 0.18)",
+          below: "rgba(0, 0, 0, 0)",
+        },
+      },
+      {
+        label: "Neutral Zone",
+        data: points.map(() => 0.2),
+        borderWidth: 0,
+        pointRadius: 0,
+        fill: {
+          target: {
+            value: -0.2,
+          },
+          above: "rgba(245, 158, 11, 0.16)",
+          below: "rgba(0, 0, 0, 0)",
+        },
+      },
+      {
+        label: "Bearish Zone",
+        data: points.map(() => -0.2),
+        borderWidth: 0,
+        pointRadius: 0,
+        fill: {
+          target: {
+            value: -1,
+          },
+          above: "rgba(244, 63, 94, 0.16)",
+          below: "rgba(0, 0, 0, 0)",
+        },
+      },
+      {
         label: "Regime",
         data: points.map((point) => regimeToValue[point.label]),
-        borderColor: "#2563eb",
-        backgroundColor: "rgba(37, 99, 235, 0.18)",
-        pointRadius: 2,
-        pointHoverRadius: 4,
+        borderColor: "#1d4ed8",
+        backgroundColor: "rgba(37, 99, 235, 0.32)",
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBorderWidth: 1.5,
+        pointBorderColor: "#ffffff",
         pointBackgroundColor: points.map((point) => {
           if (point.label === "bullish") {
             return "#059669";
@@ -138,7 +190,31 @@ export function RegimeHistoryTimelineChart({ points }: RegimeHistoryTimelineChar
           }
           return "#d97706";
         }),
-        borderWidth: 2,
+        borderWidth: 2.4,
+        segment: {
+          borderColor(context: ScriptableLineSegmentContext) {
+            const from = context.p0.parsed.y ?? Number.NaN;
+            const to = context.p1.parsed.y ?? Number.NaN;
+            if (!Number.isFinite(from) || !Number.isFinite(to)) {
+              return "#1d4ed8";
+            }
+            if (to > from) {
+              return "#16a34a";
+            }
+            if (to < from) {
+              return "#e11d48";
+            }
+            return "#1d4ed8";
+          },
+          borderDash(context: ScriptableLineSegmentContext) {
+            const from = context.p0.parsed.y ?? Number.NaN;
+            const to = context.p1.parsed.y ?? Number.NaN;
+            if (!Number.isFinite(from) || !Number.isFinite(to)) {
+              return [0, 0];
+            }
+            return from === to ? [0, 0] : [6, 4];
+          },
+        },
         fill: true,
         stepped: true,
       },
@@ -152,8 +228,28 @@ export function RegimeHistoryTimelineChart({ points }: RegimeHistoryTimelineChar
     >
       <h2 className="text-lg font-semibold text-slate-900">Regime History Timeline</h2>
       <p className="mt-1 text-xs text-slate-500">
-        Step timeline of bearish, neutral, and bullish states over the current lookback window.
+        Intensified timeline with regime zones and transition-aware segment styling.
       </p>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-4">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-xs text-emerald-900">
+          <span className="font-semibold">Bullish</span>
+          <span className="ml-2">{bullishCount}</span>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs text-amber-900">
+          <span className="font-semibold">Neutral</span>
+          <span className="ml-2">{neutralCount}</span>
+        </div>
+        <div className="rounded-lg border border-rose-200 bg-rose-50/80 px-3 py-2 text-xs text-rose-900">
+          <span className="font-semibold">Bearish</span>
+          <span className="ml-2">{bearishCount}</span>
+        </div>
+        <div className="rounded-lg border border-sky-200 bg-sky-50/80 px-3 py-2 text-xs text-sky-900">
+          <span className="font-semibold">Transitions</span>
+          <span className="ml-2">{transitions}</span>
+        </div>
+      </div>
+
       <div className="mt-4 h-80">
         <Line data={data} options={chartOptions} />
       </div>

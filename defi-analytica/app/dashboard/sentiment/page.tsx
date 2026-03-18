@@ -8,6 +8,7 @@ import type {
 } from "@/src/server/services/sentiment-scoring/service";
 
 import { FactorContributionCharts } from "./factor-contribution-charts";
+import { ConfidenceTrendChart } from "./confidence-trend-chart";
 import { RegimeHistoryTimelineChart } from "./regime-history-timeline-chart";
 
 const SENTIMENT_PARAMS = {
@@ -121,9 +122,12 @@ export default async function DashboardSentimentPage() {
             </p>
             <p className="mt-1">
               Confidence:{" "}
-              <span className="font-medium text-slate-800">
+              <Link
+                href="#confidence-trend-chart"
+                className="font-medium text-slate-800 underline decoration-slate-300 underline-offset-4"
+              >
                 {formatPercent(score.confidence * 100, 1)}
-              </span>
+              </Link>
             </p>
           </div>
         </header>
@@ -169,6 +173,8 @@ export default async function DashboardSentimentPage() {
 
         <RegimeHistoryTimelineChart points={history} />
 
+        <ConfidenceTrendChart points={history} />
+
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Recent Sentiment Observations</h2>
           <p className="mt-1 text-xs text-slate-500">
@@ -201,7 +207,8 @@ export default async function DashboardSentimentPage() {
         </section>
 
         <footer className="mt-8 text-sm text-slate-600">
-          Feature 13 tasks 1-3 complete: sentiment deep-dive, factor charts, and regime timeline.
+          Feature 13 tasks 1-4 complete: sentiment deep-dive, factor charts, regime timeline, and
+          confidence trend.
           <Link
             href="/dashboard"
             className="ml-2 font-medium text-slate-900 underline decoration-slate-300 underline-offset-4"

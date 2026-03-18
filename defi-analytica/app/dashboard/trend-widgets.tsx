@@ -152,7 +152,15 @@ export function TrendWidgets({ points }: TrendWidgetsProps) {
       </article>
 
       <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Confidence Trend</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-900">Confidence Trend</h2>
+          <Link
+            href="/dashboard/sentiment#confidence-trend-chart"
+            className="text-xs font-medium text-sky-700 underline decoration-sky-300 underline-offset-4"
+          >
+            Open deep dive
+          </Link>
+        </div>
         <p className="mt-1 text-xs text-slate-500">
           Model confidence over time based on score strength and factor coverage.
         </p>

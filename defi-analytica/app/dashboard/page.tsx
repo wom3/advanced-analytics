@@ -127,9 +127,12 @@ export default async function DashboardPage() {
           </article>
 
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+            <Link
+              href="/dashboard/sentiment#confidence-trend-chart"
+              className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
+            >
               Confidence
-            </p>
+            </Link>
             <p className="mt-3 text-4xl font-semibold text-slate-900">
               {formatPercent(overview.score.confidence * 100, 1)}
             </p>
@@ -203,9 +206,12 @@ export default async function DashboardPage() {
             </article>
 
             <article className="rounded-xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+              <Link
+                href="/dashboard/sentiment#confidence-trend-chart"
+                className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
+              >
                 Confidence Band
-              </p>
+              </Link>
               <p className="mt-3 text-2xl font-semibold text-slate-900">
                 {formatPercent(overview.score.confidence * 100, 1)}
               </p>
