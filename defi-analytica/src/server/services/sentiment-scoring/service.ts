@@ -11,16 +11,16 @@ import rawWeightsConfig from "./weights.json";
 const sentimentWeightsSchema = z
   .object({
     version: z.number().int().positive(),
-    defaultWeight: z.number().positive(),
-    factors: z.record(z.string(), z.number().positive()),
+    defaultWeight: z.number().positive().finite(),
+    factors: z.record(z.string(), z.number().positive().finite()),
     labelThresholds: z.object({
       bullish: z.number().finite(),
       bearish: z.number().finite(),
     }),
     confidence: z.object({
-      scoreScale: z.number().positive(),
-      weightCoverageWeight: z.number().nonnegative(),
-      scoreStrengthWeight: z.number().nonnegative(),
+      scoreScale: z.number().positive().finite(),
+      weightCoverageWeight: z.number().nonnegative().finite(),
+      scoreStrengthWeight: z.number().nonnegative().finite(),
     }),
   })
   .superRefine((config, context) => {
