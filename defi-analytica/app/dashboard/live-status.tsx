@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 type LiveStatusProps = {
@@ -38,10 +38,13 @@ function toneClasses(tone: FreshnessTone): string {
 
 export function LiveStatus({ asOf, freshnessSec, autoRefreshMs = 60_000 }: LiveStatusProps) {
   const router = useRouter();
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  const [isPending, startTransition] = useTransition();
-
   const parsedAsOfMs = Number.isFinite(Date.parse(asOf)) ? Date.parse(asOf) : null;
+  const initialNowMs = parsedAsOfMs === null ? 0 : parsedAsOfMs + freshnessSec * 1_000;
+
+  const [nowMs, setNowMs] = useState(() => initialNowMs);
+  const [isPending, startTransition] = useTransition();
+  const isPendingRef = useRef(isPending);
+
   const autoRefreshSec = Math.max(Math.floor(autoRefreshMs / 1_000), 10);
   const autoRefreshIntervalMs = autoRefreshSec * 1_000;
 
@@ -56,8 +59,12 @@ export function LiveStatus({ asOf, freshnessSec, autoRefreshMs = 60_000 }: LiveS
   }, []);
 
   useEffect(() => {
+    isPendingRef.current = isPending;
+  }, [isPending]);
+
+  useEffect(() => {
     const autoRefresh = window.setInterval(() => {
-      if (isPending) {
+      if (isPendingRef.current) {
         return;
       }
 
@@ -69,7 +76,7 @@ export function LiveStatus({ asOf, freshnessSec, autoRefreshMs = 60_000 }: LiveS
     return () => {
       window.clearInterval(autoRefresh);
     };
-  }, [autoRefreshIntervalMs, isPending, router]);
+  }, [autoRefreshIntervalMs, router]);
 
   const dataAgeSec = useMemo(() => {
     if (parsedAsOfMs === null) {
