@@ -185,3 +185,129 @@ test("emits per-timestamp factor contribution table from normalized factor stren
   assert.ok(Math.abs(pos - 0.5) < 1e-8);
   assert.ok(Math.abs(neg + 0.5) < 1e-8);
 });
+
+test("clamps minPeriods to rollingWindow when configured larger", () => {
+  const result = engineerFeatureTable(
+    {
+      factors: [
+        {
+          factorId: "series_a",
+          source: "internal",
+          points: [
+            { timestamp: "2026-01-01T00:00:00.000Z", value: 1 },
+            { timestamp: "2026-01-01T01:00:00.000Z", value: 2 },
+            { timestamp: "2026-01-01T02:00:00.000Z", value: 3 },
+          ],
+        },
+      ],
+    },
+    {
+      rollingWindow: 2,
+      minPeriods: 10,
+      timelineMode: "union",
+    }
+  );
+
+  assert.equal(result.minPeriods, 2);
+  assert.equal(result.rows[0]!.factors["series_a"]!.zScore, null);
+  assert.equal(result.rows[1]!.factors["series_a"]!.zScore, 1);
+});
+
+test("preserves millisecond timestamp precision during alignment", () => {
+  const result = engineerFeatureTable(
+    {
+      factors: [
+        {
+          factorId: "ms_factor",
+          source: "internal",
+          points: [
+            { timestamp: "2026-01-01T00:00:00.100Z", value: 1 },
+            { timestamp: "2026-01-01T00:00:00.900Z", value: 2 },
+          ],
+        },
+      ],
+    },
+    {
+      rollingWindow: 2,
+      minPeriods: 1,
+      timelineMode: "union",
+    }
+  );
+
+  assert.equal(result.rows.length, 2);
+  assert.deepEqual(
+    result.rows.map((row) => row.timestamp),
+    ["2026-01-01T00:00:00.100Z", "2026-01-01T00:00:00.900Z"]
+  );
+});
+
+test("rejects duplicate factor IDs to avoid map collisions", () => {
+  assert.throws(
+    () =>
+      engineerFeatureTable(
+        {
+          factors: [
+            {
+              factorId: "dup_factor",
+              source: "a",
+              points: [{ timestamp: "2026-01-01T00:00:00.000Z", value: 1 }],
+            },
+            {
+              factorId: "dup_factor",
+              source: "b",
+              points: [{ timestamp: "2026-01-01T00:00:00.000Z", value: 2 }],
+            },
+          ],
+        },
+        {
+          rollingWindow: 2,
+          minPeriods: 1,
+          timelineMode: "union",
+        }
+      ),
+    /Duplicate factorId/
+  );
+});
+
+test("handles sparse windows correctly with optimized rolling z-score", () => {
+  const result = engineerFeatureTable(
+    {
+      factors: [
+        {
+          factorId: "sparse",
+          source: "internal",
+          points: [
+            { timestamp: "2026-01-01T00:00:00.000Z", value: 1 },
+            { timestamp: "2026-01-01T02:00:00.000Z", value: 5 },
+            { timestamp: "2026-01-01T03:00:00.000Z", value: 9 },
+          ],
+        },
+        {
+          factorId: "anchor",
+          source: "internal",
+          points: [
+            { timestamp: "2026-01-01T00:00:00.000Z", value: 0 },
+            { timestamp: "2026-01-01T01:00:00.000Z", value: 0 },
+            { timestamp: "2026-01-01T02:00:00.000Z", value: 0 },
+            { timestamp: "2026-01-01T03:00:00.000Z", value: 0 },
+          ],
+        },
+      ],
+    },
+    {
+      rollingWindow: 2,
+      minPeriods: 2,
+      timelineMode: "union",
+    }
+  );
+
+  const z0 = result.rows[0]!.factors["sparse"]!.zScore;
+  const z1 = result.rows[1]!.factors["sparse"]!.zScore;
+  const z2 = result.rows[2]!.factors["sparse"]!.zScore;
+  const z3 = result.rows[3]!.factors["sparse"]!.zScore;
+
+  assert.equal(z0, null);
+  assert.equal(z1, 1);
+  assert.equal(z2, 1);
+  assert.equal(z3, 1);
+});

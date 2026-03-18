@@ -43,7 +43,7 @@ export type FeatureEngineeringResult = {
 };
 
 type IndexedPoint = {
-  timestampSec: number;
+  timestampMs: number;
   value: number;
 };
 
@@ -58,46 +58,56 @@ type ImputationResult = {
   imputedFlags: boolean[];
 };
 
-function timestampToSec(value: string): number | null {
+function timestampToMs(value: string): number | null {
   const asDate = Date.parse(value);
   if (!Number.isFinite(asDate)) {
     return null;
   }
-  return Math.floor(asDate / 1_000);
+  return asDate;
 }
 
-function toIso(timestampSec: number): string {
-  return new Date(timestampSec * 1_000).toISOString();
+function toIso(timestampMs: number): string {
+  return new Date(timestampMs).toISOString();
 }
 
 function sanitizePoints(points: FeatureValuePoint[]): IndexedPoint[] {
   const byTimestamp = new Map<number, number>();
 
   for (const point of points) {
-    const timestampSec = timestampToSec(point.timestamp);
-    if (timestampSec === null || !Number.isFinite(point.value)) {
+    const timestampMs = timestampToMs(point.timestamp);
+    if (timestampMs === null || !Number.isFinite(point.value)) {
       continue;
     }
 
-    byTimestamp.set(timestampSec, point.value);
+    byTimestamp.set(timestampMs, point.value);
   }
 
   return [...byTimestamp.entries()]
-    .map(([timestampSec, value]) => ({
-      timestampSec,
+    .map(([timestampMs, value]) => ({
+      timestampMs,
       value,
     }))
-    .sort((left, right) => left.timestampSec - right.timestampSec);
+    .sort((left, right) => left.timestampMs - right.timestampMs);
 }
 
 function sanitizeFactors(factors: FeatureFactorInput[]): IndexedFactor[] {
-  return factors
+  const sanitized = factors
     .map((factor) => ({
       factorId: factor.factorId.trim(),
       source: factor.source.trim() || "unknown",
       points: sanitizePoints(factor.points),
     }))
     .filter((factor) => factor.factorId.length > 0);
+
+  const seen = new Set<string>();
+  for (const factor of sanitized) {
+    if (seen.has(factor.factorId)) {
+      throw new Error(`Duplicate factorId '${factor.factorId}' is not allowed.`);
+    }
+    seen.add(factor.factorId);
+  }
+
+  return sanitized;
 }
 
 function buildTimeline(factors: IndexedFactor[], timelineMode: "union" | "intersection"): number[] {
@@ -109,18 +119,18 @@ function buildTimeline(factors: IndexedFactor[], timelineMode: "union" | "inters
     const tsSet = new Set<number>();
     for (const factor of factors) {
       for (const point of factor.points) {
-        tsSet.add(point.timestampSec);
+        tsSet.add(point.timestampMs);
       }
     }
     return [...tsSet].sort((left, right) => left - right);
   }
 
   const firstFactor = factors[0]!;
-  const intersection = new Set(firstFactor.points.map((point) => point.timestampSec));
+  const intersection = new Set(firstFactor.points.map((point) => point.timestampMs));
 
   for (let index = 1; index < factors.length; index += 1) {
     const factor = factors[index]!;
-    const timestamps = new Set(factor.points.map((point) => point.timestampSec));
+    const timestamps = new Set(factor.points.map((point) => point.timestampMs));
     for (const existing of intersection) {
       if (!timestamps.has(existing)) {
         intersection.delete(existing);
@@ -200,39 +210,52 @@ function rollingZScores(
   rollingWindow: number,
   minPeriods: number
 ): Array<number | null> {
-  return values.map((value, index) => {
-    if (value === null) {
-      return null;
+  const result: Array<number | null> = new Array(values.length).fill(null);
+  let sum = 0;
+  let sumSq = 0;
+  let count = 0;
+
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index] ?? null;
+
+    if (value !== null) {
+      sum += value;
+      sumSq += value * value;
+      count += 1;
     }
 
-    const windowStart = Math.max(0, index - rollingWindow + 1);
-    const observed: number[] = [];
-
-    for (let cursor = windowStart; cursor <= index; cursor += 1) {
-      const current = values[cursor] ?? null;
-      if (current !== null) {
-        observed.push(current);
+    if (index >= rollingWindow) {
+      const oldValue = values[index - rollingWindow] ?? null;
+      if (oldValue !== null) {
+        sum -= oldValue;
+        sumSq -= oldValue * oldValue;
+        count -= 1;
       }
     }
 
-    if (observed.length < minPeriods) {
-      return null;
+    if (value === null) {
+      result[index] = null;
+      continue;
     }
 
-    const mean = observed.reduce((sum, current) => sum + current, 0) / observed.length;
-    const variance =
-      observed.reduce((sum, current) => {
-        const delta = current - mean;
-        return sum + delta * delta;
-      }, 0) / observed.length;
-    const stdDev = Math.sqrt(Math.max(variance, 0));
+    if (count < minPeriods) {
+      result[index] = null;
+      continue;
+    }
+
+    const mean = sum / count;
+    const variance = Math.max(sumSq / count - mean * mean, 0);
+    const stdDev = Math.sqrt(variance);
 
     if (stdDev === 0) {
-      return 0;
+      result[index] = 0;
+      continue;
     }
 
-    return (value - mean) / stdDev;
-  });
+    result[index] = (value - mean) / stdDev;
+  }
+
+  return result;
 }
 
 export function engineerFeatureTable(
@@ -240,7 +263,11 @@ export function engineerFeatureTable(
   options?: FeatureEngineeringOptions
 ): FeatureEngineeringResult {
   const rollingWindow = Math.max(1, Math.floor(options?.rollingWindow ?? 20));
-  const minPeriods = Math.max(1, Math.floor(options?.minPeriods ?? Math.min(rollingWindow, 5)));
+  const requestedMinPeriods = Math.max(
+    1,
+    Math.floor(options?.minPeriods ?? Math.min(rollingWindow, 5))
+  );
+  const minPeriods = Math.min(requestedMinPeriods, rollingWindow);
   const timelineMode = options?.timelineMode ?? "union";
 
   const factors = sanitizeFactors(input.factors);
@@ -255,11 +282,11 @@ export function engineerFeatureTable(
   for (const factor of factors) {
     factorSources.set(factor.factorId, factor.source);
     const pointByTimestamp = new Map<number, number>(
-      factor.points.map((point) => [point.timestampSec, point.value])
+      factor.points.map((point) => [point.timestampMs, point.value])
     );
 
-    const rawAligned = timeline.map((timestampSec) => {
-      const value = pointByTimestamp.get(timestampSec);
+    const rawAligned = timeline.map((timestampMs) => {
+      const value = pointByTimestamp.get(timestampMs);
       return value === undefined ? null : value;
     });
 
@@ -273,7 +300,7 @@ export function engineerFeatureTable(
   }
 
   const factorIds = factors.map((factor) => factor.factorId);
-  const rows: FeatureEngineeringRow[] = timeline.map((timestampSec, rowIndex) => {
+  const rows: FeatureEngineeringRow[] = timeline.map((timestampMs, rowIndex) => {
     const denominator = factorIds.reduce((sum, factorId) => {
       const zScore = perFactorZ.get(factorId)?.[rowIndex] ?? null;
       if (zScore === null) {
@@ -302,7 +329,7 @@ export function engineerFeatureTable(
     }
 
     return {
-      timestamp: toIso(timestampSec),
+      timestamp: toIso(timestampMs),
       factors: rowFactors,
     };
   });
