@@ -86,7 +86,7 @@
 
 - [x] Build /dashboard/sentiment page
 - [x] Add factor contribution charts
-- [ ] Add regime history timeline chart
+- [x] Add regime history timeline chart
 - [ ] Add confidence trend chart
 
 ## Feature 14: Flows Deep Dive Page

@@ -150,7 +150,7 @@ Base: `/api/v1`
 ## Implemented Frontend Pages
 
 - `GET /dashboard` - KPI cards, trend widgets, sentiment state panel, and auto-refresh freshness warnings (Feature 12)
-- `GET /dashboard/sentiment` - Sentiment deep-dive page with score context, factor contribution charts, and recent observation table (Feature 13 tasks 1-2)
+- `GET /dashboard/sentiment` - Sentiment deep-dive page with score context, factor contribution charts, regime history timeline chart, and recent observation table (Feature 13 tasks 1-3)
 
 ## How to Check Endpoints
 

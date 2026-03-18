@@ -8,6 +8,7 @@ import type {
 } from "@/src/server/services/sentiment-scoring/service";
 
 import { FactorContributionCharts } from "./factor-contribution-charts";
+import { RegimeHistoryTimelineChart } from "./regime-history-timeline-chart";
 
 const SENTIMENT_PARAMS = {
   mode: "live",
@@ -166,6 +167,8 @@ export default async function DashboardSentimentPage() {
           negative={score.contributors.negative}
         />
 
+        <RegimeHistoryTimelineChart points={history} />
+
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Recent Sentiment Observations</h2>
           <p className="mt-1 text-xs text-slate-500">
@@ -198,7 +201,7 @@ export default async function DashboardSentimentPage() {
         </section>
 
         <footer className="mt-8 text-sm text-slate-600">
-          Feature 13 task 1 complete: `/dashboard/sentiment` page is available.
+          Feature 13 tasks 1-3 complete: sentiment deep-dive, factor charts, and regime timeline.
           <Link
             href="/dashboard"
             className="ml-2 font-medium text-slate-900 underline decoration-slate-300 underline-offset-4"

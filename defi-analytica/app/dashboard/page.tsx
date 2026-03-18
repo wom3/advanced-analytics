@@ -183,9 +183,12 @@ export default async function DashboardPage() {
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <article className="rounded-xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+              <Link
+                href="/dashboard/sentiment#regime-history-timeline"
+                className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
+              >
                 Regime State
-              </p>
+              </Link>
               <div
                 className={`mt-3 inline-flex rounded-full border px-2 py-1 text-xs font-semibold uppercase ${cardTone(overview.score.label)}`}
               >
