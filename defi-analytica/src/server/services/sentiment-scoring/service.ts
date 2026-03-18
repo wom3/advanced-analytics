@@ -67,6 +67,13 @@ export type SentimentScoreResult = {
   };
 };
 
+export type SentimentHistoryPoint = {
+  timestamp: string;
+  score: number;
+  label: SentimentLabel;
+  confidence: number;
+};
+
 const sentimentWeightsConfig = sentimentWeightsSchema.parse(rawWeightsConfig);
 
 function clamp01(value: number): number {
@@ -170,12 +177,11 @@ function selectLatestRow(table: FeatureEngineeringResult): FeatureEngineeringRow
   return latest;
 }
 
-export function scoreSentimentFromFeatureTable(
-  table: FeatureEngineeringResult,
-  config: SentimentWeightsConfig = sentimentWeightsConfig
+function scoreSentimentRow(
+  row: FeatureEngineeringRow,
+  config: SentimentWeightsConfig
 ): SentimentScoreResult {
-  const latestRow = selectLatestRow(table);
-  const weighted = computeWeightedContributors(latestRow.factors, config);
+  const weighted = computeWeightedContributors(row.factors, config);
 
   const score =
     weighted.usedAbsWeight === 0
@@ -209,7 +215,7 @@ export function scoreSentimentFromFeatureTable(
     .slice(0, 3);
 
   return {
-    asOf: latestRow.timestamp,
+    asOf: row.timestamp,
     score,
     label: toLabel(score, config.labelThresholds),
     confidence,
@@ -219,6 +225,29 @@ export function scoreSentimentFromFeatureTable(
       negative,
     },
   };
+}
+
+export function scoreSentimentFromFeatureTable(
+  table: FeatureEngineeringResult,
+  config: SentimentWeightsConfig = sentimentWeightsConfig
+): SentimentScoreResult {
+  const latestRow = selectLatestRow(table);
+  return scoreSentimentRow(latestRow, config);
+}
+
+export function scoreSentimentHistoryFromFeatureTable(
+  table: FeatureEngineeringResult,
+  config: SentimentWeightsConfig = sentimentWeightsConfig
+): SentimentHistoryPoint[] {
+  return table.rows.map((row) => {
+    const scored = scoreSentimentRow(row, config);
+    return {
+      timestamp: row.timestamp,
+      score: scored.score,
+      label: scored.label,
+      confidence: scored.confidence,
+    };
+  });
 }
 
 export function parseSentimentWeightsConfig(input: unknown): SentimentWeightsConfig {
