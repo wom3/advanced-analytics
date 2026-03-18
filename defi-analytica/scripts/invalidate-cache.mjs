@@ -1,7 +1,5 @@
 import { createClient } from "redis";
 
-const ALL_GROUPS = ["llama.metrics", "coingecko.market", "fng.latest", "fng.history"];
-
 const GROUP_PREFIXES = {
   "llama.metrics": ["aa:v1:http:/api/v1/llama/metrics/"],
   "coingecko.market": ["aa:v1:http:/api/v1/coingecko/market/"],
@@ -9,15 +7,34 @@ const GROUP_PREFIXES = {
   "fng.history": ["aa:v1:http:/api/v1/fng/history"],
 };
 
+const ALL_GROUPS = Object.keys(GROUP_PREFIXES);
+
 async function unlinkByPrefix(client, prefix) {
   let removed = 0;
+  const BATCH_SIZE = 200;
+  const batch = [];
 
-  for await (const keys of client.scanIterator({ MATCH: `${prefix}*`, COUNT: 200 })) {
-    if (!keys.length) {
-      continue;
+  for await (const chunk of client.scanIterator({ MATCH: `${prefix}*`, COUNT: BATCH_SIZE })) {
+    const keys = Array.isArray(chunk) ? chunk : [chunk];
+    for (const key of keys) {
+      if (!key) {
+        continue;
+      }
+      batch.push(key);
     }
 
-    const result = await client.sendCommand(["UNLINK", ...keys]);
+    if (batch.length >= BATCH_SIZE) {
+      const result = await client.sendCommand(["UNLINK", ...batch]);
+      const numeric = Number(result);
+      if (Number.isFinite(numeric)) {
+        removed += numeric;
+      }
+      batch.length = 0;
+    }
+  }
+
+  if (batch.length > 0) {
+    const result = await client.sendCommand(["UNLINK", ...batch]);
     const numeric = Number(result);
     if (Number.isFinite(numeric)) {
       removed += numeric;

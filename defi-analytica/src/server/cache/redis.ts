@@ -36,6 +36,7 @@ async function getRedisClient(): Promise<AppRedisClient | null> {
         requestId: "system",
         message: error instanceof Error ? error.message : "Unknown Redis connection error",
       });
+      clientPromise = null;
       return null;
     });
   }
@@ -92,13 +93,31 @@ export async function cacheUnlinkByPrefix(prefix: string): Promise<number> {
 
   let removed = 0;
 
+  const batchSize = 200;
+  const batch: string[] = [];
+
   try {
-    for await (const keys of client.scanIterator({ MATCH: `${prefix}*`, COUNT: 200 })) {
-      if (!keys.length) {
-        continue;
+    for await (const chunk of client.scanIterator({ MATCH: `${prefix}*`, COUNT: batchSize })) {
+      const keys = Array.isArray(chunk) ? chunk : [chunk];
+      for (const key of keys) {
+        if (!key) {
+          continue;
+        }
+        batch.push(key);
       }
 
-      const result = await client.sendCommand(["UNLINK", ...keys]);
+      if (batch.length >= batchSize) {
+        const result = await client.sendCommand(["UNLINK", ...batch]);
+        const numeric = Number(result);
+        if (Number.isFinite(numeric)) {
+          removed += numeric;
+        }
+        batch.length = 0;
+      }
+    }
+
+    if (batch.length > 0) {
+      const result = await client.sendCommand(["UNLINK", ...batch]);
       const numeric = Number(result);
       if (Number.isFinite(numeric)) {
         removed += numeric;

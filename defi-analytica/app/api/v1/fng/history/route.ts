@@ -17,6 +17,10 @@ import {
 import { CACHE_TTL_SECONDS } from "@/src/server/cache/policy";
 import { logApiError, logApiInfo, logApiWarn } from "@/src/server/observability/logger";
 
+type FearGreedHistoryData = {
+  points: Awaited<ReturnType<typeof getFearGreedHistory>>;
+};
+
 function parseOptionalTimestamp(value: string | null, name: string): number | undefined {
   if (!value || !value.trim()) {
     return undefined;
@@ -105,12 +109,7 @@ export async function GET(request: NextRequest) {
     }
 
     const cacheKey = buildHttpCacheKey(request.nextUrl);
-    const cached =
-      await getCachedSuccessEnvelope<
-        Awaited<ReturnType<typeof getFearGreedHistory>> extends infer T
-          ? { points: T extends unknown[] ? T : never }
-          : never
-      >(cacheKey);
+    const cached = await getCachedSuccessEnvelope<FearGreedHistoryData>(cacheKey);
     if (cached) {
       logApiInfo({
         event: "api.fng.history.cache_hit",
@@ -151,7 +150,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const successPayload: CachedSuccessEnvelope<{ points: typeof points }> = {
+    const successPayload: CachedSuccessEnvelope<FearGreedHistoryData> = {
       source: "alternative",
       asOf,
       freshnessSec: 0,

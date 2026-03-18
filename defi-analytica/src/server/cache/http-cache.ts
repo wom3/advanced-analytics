@@ -1,14 +1,9 @@
 import { cacheGet, cacheSet } from "@/src/server/cache/redis";
+import type { ApiSuccess } from "@/src/server/api/envelope";
 
 import { HTTP_CACHE_KEY_PREFIX } from "./policy";
 
-type CachedSuccessEnvelope<T> = {
-  source: string;
-  asOf: string;
-  freshnessSec: number;
-  data: T;
-  meta: Record<string, unknown>;
-};
+type CachedSuccessEnvelope<T> = ApiSuccess<T>;
 
 export type { CachedSuccessEnvelope };
 
