@@ -279,13 +279,13 @@ curl -s "http://localhost:3000/api/v1/sentiment/history?mode=live&interval=1h&po
 curl -s "http://localhost:3000/api/v1/dashboard/overview?mode=live&interval=1h&points=72&asset=bitcoin&chain=Ethereum" | jq
 ```
 
-### Check Dashboard Core Page (Feature 12 tasks 1 and 2)
+### Check Dashboard Core Page (Feature 12 tasks 1, 2, and 3)
 
 ```bash
 open "http://localhost:3000/dashboard"
 ```
 
-The current `/dashboard` implementation includes KPI cards and Chart.js trend widgets. Sentiment panel and auto-refresh warning behavior are intentionally left for the remaining Feature 12 tasks.
+The current `/dashboard` implementation includes KPI cards, Chart.js trend widgets, and a sentiment state panel. Auto-refresh warning behavior is intentionally left for the remaining Feature 12 tasks.
 
 ### Response Contracts
 

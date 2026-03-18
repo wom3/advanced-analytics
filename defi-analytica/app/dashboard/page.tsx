@@ -31,6 +31,16 @@ function cardTone(label: "bullish" | "neutral" | "bearish"): string {
   return "text-amber-700 border-amber-300 bg-amber-50";
 }
 
+function confidenceState(value: number): "high" | "medium" | "low" {
+  if (value >= 0.7) {
+    return "high";
+  }
+  if (value >= 0.4) {
+    return "medium";
+  }
+  return "low";
+}
+
 export const metadata = {
   title: "Dashboard | defi-analytica",
   description: "KPI dashboard for sentiment-aware crypto analytics.",
@@ -47,6 +57,7 @@ export default async function DashboardPage() {
 
   const uptimeProviders = overview.providerStatus.filter((provider) => provider.ok).length;
   const uptimePct = Math.round((uptimeProviders / overview.providerStatus.length) * 100);
+  const confidenceBand = confidenceState(overview.score.confidence);
 
   return (
     <main
@@ -137,6 +148,111 @@ export default async function DashboardPage() {
             confidence: point.confidence,
           }))}
         />
+
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
+          <h2 className="text-lg font-semibold text-slate-900">Sentiment State Panel</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Current regime, confidence band, and strongest directional contributors.
+          </p>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <article className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                Regime State
+              </p>
+              <div
+                className={`mt-3 inline-flex rounded-full border px-2 py-1 text-xs font-semibold uppercase ${cardTone(overview.score.label)}`}
+              >
+                {overview.score.label}
+              </div>
+              <p className="mt-3 text-xs text-slate-600">
+                Score:{" "}
+                <span className="font-medium text-slate-900">
+                  {formatNumber(overview.score.score, 3)}
+                </span>
+              </p>
+            </article>
+
+            <article className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                Confidence Band
+              </p>
+              <p className="mt-3 text-2xl font-semibold text-slate-900">
+                {formatPercent(overview.score.confidence * 100, 1)}
+              </p>
+              <p className="mt-2 text-xs text-slate-600">
+                Band:{" "}
+                <span className="font-medium capitalize text-slate-900">{confidenceBand}</span>
+              </p>
+            </article>
+
+            <article className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                Sentiment Anchors
+              </p>
+              <p className="mt-3 text-sm text-slate-700">
+                Fear & Greed:{" "}
+                <span className="font-semibold text-slate-900">
+                  {formatNumber(overview.anchors.fearGreedValue, 0)}
+                </span>
+              </p>
+              <p className="mt-1 text-sm text-slate-700">
+                Classification:{" "}
+                <span className="font-semibold capitalize text-slate-900">
+                  {overview.anchors.fearGreedClassification ?? "N/A"}
+                </span>
+              </p>
+            </article>
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <article className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                Top Positive Contributors
+              </p>
+              <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                {overview.score.contributors.positive.length === 0 ? (
+                  <li className="text-slate-500">No positive contributors available.</li>
+                ) : (
+                  overview.score.contributors.positive.map((contributor) => (
+                    <li
+                      key={`pos-${contributor.factorId}`}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <span className="truncate">{contributor.factorId}</span>
+                      <span className="font-medium text-emerald-700">
+                        +{formatNumber(contributor.weightedContribution * 100, 2)}%
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </article>
+
+            <article className="rounded-xl border border-rose-200 bg-rose-50/60 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
+                Top Negative Contributors
+              </p>
+              <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                {overview.score.contributors.negative.length === 0 ? (
+                  <li className="text-slate-500">No negative contributors available.</li>
+                ) : (
+                  overview.score.contributors.negative.map((contributor) => (
+                    <li
+                      key={`neg-${contributor.factorId}`}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <span className="truncate">{contributor.factorId}</span>
+                      <span className="font-medium text-rose-700">
+                        {formatNumber(contributor.weightedContribution * 100, 2)}%
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </article>
+          </div>
+        </section>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm backdrop-blur">
           <h2 className="text-lg font-semibold text-slate-900">Provider Status</h2>

@@ -79,7 +79,7 @@
 
 - [x] Build /dashboard page with KPI cards
 - [x] Build trend chart widgets with Chart.js
-- [ ] Build sentiment state panel
+- [x] Build sentiment state panel
 - [ ] Add auto-refresh and stale-data warnings
 
 ## Feature 13: Sentiment Deep Dive Page
