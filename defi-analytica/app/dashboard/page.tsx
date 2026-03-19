@@ -5,6 +5,7 @@ import type { ApiSuccess } from "@/src/server/api/envelope";
 import type { DashboardOverviewResult } from "@/src/server/services/dashboard/service";
 
 import { LiveStatus } from "./live-status";
+import { MarketStateScene } from "./market-state-scene";
 import { TrendWidgets } from "./trend-widgets";
 
 function formatNumber(value: number | null, digits = 2): string {
@@ -169,6 +170,8 @@ export default async function DashboardPage() {
             confidence: point.confidence,
           }))}
         />
+
+        <MarketStateScene />
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
           <div className="flex items-center justify-between gap-3">
