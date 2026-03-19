@@ -91,10 +91,10 @@
 
 ## Feature 14: Flows Deep Dive Page
 
-- [ ] Build /dashboard/flows page
-- [ ] Add DEX volume and TVL flow charts
-- [ ] Add protocol and chain filter controls
-- [ ] Add export to CSV and JSON actions
+- [x] Build /dashboard/flows page
+- [x] Add DEX volume and TVL flow charts
+- [x] Add protocol and chain filter controls
+- [x] Add export to CSV and JSON actions
 
 ## Feature 15: Three.js Experience
 
