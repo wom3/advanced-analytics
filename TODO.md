@@ -94,7 +94,7 @@
 - [x] Build /dashboard/flows page
 - [x] Add DEX volume and TVL flow charts
 - [x] Add protocol and chain filter controls
-- [ ] Add export to CSV and JSON actions
+- [x] Add export to CSV and JSON actions
 
 ## Feature 15: Three.js Experience
 

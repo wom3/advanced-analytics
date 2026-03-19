@@ -5,20 +5,12 @@ import type { ApiSuccess } from "@/src/server/api/envelope";
 import type { LlamaNormalizedSeries } from "@/src/server/adapters/defillama/client";
 
 import { FlowCharts } from "./flow-charts";
+import { FlowExportActions } from "./flow-export-actions";
 
 export const metadata = {
   title: "Flows Deep Dive | defi-analytica",
   description: "Flows deep-dive page scaffold for DEX volume and TVL analytics.",
 };
-
-const UPCOMING_SECTIONS = [
-  {
-    title: "Export Actions",
-    description:
-      "CSV and JSON exports for snapshots and selected flow ranges without changing API contracts.",
-    status: "Planned in Feature 14 task 4",
-  },
-] as const;
 
 const DEFAULT_CHAIN = "Ethereum";
 const DEFAULT_INTERVAL = "1d";
@@ -60,10 +52,7 @@ function resolveFilters(searchParams: SearchParams | undefined): {
   };
 }
 
-async function loadFlowSeries(filters: {
-  chain: string;
-  protocol?: string | undefined;
-}): Promise<{
+async function loadFlowSeries(filters: { chain: string; protocol?: string | undefined }): Promise<{
   volume: LlamaNormalizedSeries;
   tvl: LlamaNormalizedSeries;
   chain: string;
@@ -144,7 +133,7 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
               Route: <span className="font-medium text-slate-800">/dashboard/flows</span>
             </p>
             <p className="mt-1">
-              Status: <span className="font-medium text-slate-800">Task 3 implemented</span>
+              Status: <span className="font-medium text-slate-800">Task 4 implemented</span>
             </p>
           </div>
         </header>
@@ -215,30 +204,23 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
 
         <FlowCharts volumePoints={volume.points} tvlPoints={tvl.points} chain={chain} />
 
+        <FlowExportActions
+          chain={chain}
+          protocol={protocol}
+          volumePoints={volume.points}
+          tvlPoints={tvl.points}
+        />
+
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Upcoming Flows Enhancements</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Feature 14 Complete</h2>
           <p className="mt-2 text-sm text-slate-600">
-            DEX volume/TVL charting and protocol-chain controls are now active. The remaining
-            Feature 14 task below is intentionally deferred.
+            Flows route, core charts, protocol-chain controls, and CSV/JSON exports are all
+            implemented for Feature 14.
           </p>
-          <div className="mt-4 grid gap-3 md:grid-cols-1">
-            {UPCOMING_SECTIONS.map((section) => (
-              <article
-                key={section.title}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-              >
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
-                  {section.status}
-                </p>
-                <h3 className="mt-2 text-base font-semibold text-slate-900">{section.title}</h3>
-                <p className="mt-2 text-sm text-slate-600">{section.description}</p>
-              </article>
-            ))}
-          </div>
         </section>
 
         <footer className="mt-8 text-sm text-slate-600">
-          Feature 14 tasks 1-3 complete: route scaffold, charts, and protocol-chain controls.
+          Feature 14 tasks 1-4 complete: route scaffold, charts, controls, and exports.
           <Link
             href="/dashboard"
             className="ml-2 font-medium text-slate-900 underline decoration-slate-300 underline-offset-4"
