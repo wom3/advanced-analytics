@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 
 import type { ApiSuccess } from "@/src/server/api/envelope";
 import type {
@@ -53,9 +54,19 @@ async function loadSentimentData(): Promise<{
 }> {
   const params = new URLSearchParams(SENTIMENT_PARAMS);
 
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  if (!host) {
+    throw new Error("Missing host header for dashboard sentiment request.");
+  }
+
+  const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
+  const scoreUrl = `${proto}://${host}/api/v1/sentiment/score?${params.toString()}`;
+  const historyUrl = `${proto}://${host}/api/v1/sentiment/history?${params.toString()}`;
+
   const [scoreRes, historyRes] = await Promise.all([
-    fetch(`/api/v1/sentiment/score?${params.toString()}`, { cache: "no-store" }),
-    fetch(`/api/v1/sentiment/history?${params.toString()}`, { cache: "no-store" }),
+    fetch(scoreUrl, { cache: "no-store" }),
+    fetch(historyUrl, { cache: "no-store" }),
   ]);
 
   if (!scoreRes.ok || !historyRes.ok) {
