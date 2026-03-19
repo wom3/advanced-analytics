@@ -25,6 +25,10 @@ const CHAIN_OPTIONS = [
   "Avalanche",
 ] as const;
 
+function isSupportedChain(value: string): value is (typeof CHAIN_OPTIONS)[number] {
+  return CHAIN_OPTIONS.includes(value as (typeof CHAIN_OPTIONS)[number]);
+}
+
 type SearchParams = Record<string, string | string[] | undefined>;
 
 function firstValue(value: string | string[] | undefined): string | undefined {
@@ -45,14 +49,15 @@ function resolveFilters(searchParams: SearchParams | undefined): {
 } {
   const selectedChain = normalizeFilter(firstValue(searchParams?.["chain"]));
   const selectedProtocol = normalizeFilter(firstValue(searchParams?.["protocol"]));
+  const chain = selectedChain && isSupportedChain(selectedChain) ? selectedChain : DEFAULT_CHAIN;
 
   return {
-    chain: selectedChain ?? DEFAULT_CHAIN,
+    chain,
     protocol: selectedProtocol,
   };
 }
 
-async function loadFlowSeries(filters: { chain: string; protocol?: string | undefined }): Promise<{
+async function loadFlowSeries(filters: { chain: string; protocol?: string }): Promise<{
   volume: LlamaNormalizedSeries;
   tvl: LlamaNormalizedSeries;
   chain: string;
@@ -103,7 +108,10 @@ type DashboardFlowsPageProps = {
 export default async function DashboardFlowsPage({ searchParams }: DashboardFlowsPageProps) {
   const resolvedSearchParams = await searchParams;
   const filters = resolveFilters(resolvedSearchParams);
-  const { volume, tvl, chain, protocol } = await loadFlowSeries(filters);
+  const loadFilters = filters.protocol
+    ? { chain: filters.chain, protocol: filters.protocol }
+    : { chain: filters.chain };
+  const { volume, tvl, chain, protocol } = await loadFlowSeries(loadFilters);
 
   return (
     <main
