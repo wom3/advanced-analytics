@@ -3,10 +3,11 @@ import type { NextRequest } from "next/server";
 import { getOrCreateRequestId, jsonError, jsonSuccess } from "@/src/server/api/envelope";
 import { publicRateLimitKey, takeToken } from "@/src/server/api/rate-limit";
 import {
-  getLlamaMetricSeries,
-  LlamaApiError,
-  type LlamaMetric,
-} from "@/src/server/adapters/defillama/client";
+  ALTERNATIVE_ATTRIBUTION,
+  ALTERNATIVE_MAX_LIMIT,
+  AlternativeApiError,
+  getFearGreedHistory,
+} from "@/src/server/adapters/alternative/client";
 import {
   buildHttpCacheKey,
   getCachedSuccessEnvelope,
@@ -16,29 +17,19 @@ import {
 import { CACHE_TTL_SECONDS } from "@/src/server/cache/policy";
 import { logApiError, logApiInfo, logApiWarn } from "@/src/server/observability/logger";
 
-function parseMetric(raw: string): LlamaMetric {
-  const value = raw.trim().toLowerCase();
-  if (value === "tvl" || value === "volume" || value === "fees" || value === "perps") {
-    return value;
-  }
-  throw new LlamaApiError("metric must be one of: tvl, volume, fees, perps.", 400, false);
-}
-
-function parseOptionalString(value: string | null): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-}
+type FearGreedHistoryData = {
+  points: Awaited<ReturnType<typeof getFearGreedHistory>>;
+};
 
 function parseOptionalTimestamp(value: string | null, name: string): number | undefined {
-  const parsedValue = parseOptionalString(value);
-  if (!parsedValue) {
+  if (!value || !value.trim()) {
     return undefined;
   }
 
-  const numeric = Number(parsedValue);
+  const numeric = Number(value);
   if (Number.isFinite(numeric)) {
     if (!Number.isInteger(numeric) || numeric < 0) {
-      throw new LlamaApiError(
+      throw new AlternativeApiError(
         `${name} must be a non-negative unix timestamp in seconds.`,
         400,
         false
@@ -47,18 +38,38 @@ function parseOptionalTimestamp(value: string | null, name: string): number | un
     return numeric;
   }
 
-  const asDate = Date.parse(parsedValue);
+  const asDate = Date.parse(value);
   if (!Number.isFinite(asDate)) {
-    throw new LlamaApiError(
+    throw new AlternativeApiError(
       `${name} must be a unix timestamp in seconds or an ISO-8601 datetime.`,
       400,
       false
     );
   }
-  return Math.floor(asDate / 1_000);
+
+  const epochSeconds = Math.floor(asDate / 1_000);
+  if (epochSeconds < 0) {
+    throw new AlternativeApiError(`${name} must be on/after 1970-01-01T00:00:00Z.`, 400, false);
+  }
+  return epochSeconds;
 }
 
-export async function GET(request: NextRequest, context: { params: Promise<{ metric: string }> }) {
+function parseOptionalLimit(value: string | null): number | undefined {
+  if (!value || !value.trim()) {
+    return undefined;
+  }
+  const numeric = Number(value);
+  if (!Number.isInteger(numeric) || numeric <= 0 || numeric > ALTERNATIVE_MAX_LIMIT) {
+    throw new AlternativeApiError(
+      `limit must be an integer between 1 and ${ALTERNATIVE_MAX_LIMIT}.`,
+      400,
+      false
+    );
+  }
+  return numeric;
+}
+
+export async function GET(request: NextRequest) {
   const startedAt = Date.now();
   const requestId = getOrCreateRequestId(request.headers);
   const key = publicRateLimitKey(request);
@@ -67,14 +78,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ met
 
   if (!rl.allowed) {
     logApiWarn({
-      event: "api.llama.metrics.rate_limited",
+      event: "api.fng.history.rate_limited",
       requestId,
       method: request.method,
       path: request.nextUrl.pathname,
       status: 429,
       durationMs: Date.now() - startedAt,
     });
-
     const response = jsonError({
       code: "RATE_LIMITED",
       message: "Too many requests for this endpoint. Please retry later.",
@@ -90,25 +100,19 @@ export async function GET(request: NextRequest, context: { params: Promise<{ met
   }
 
   try {
-    const { metric: rawMetric } = await context.params;
-    const metric = parseMetric(rawMetric);
-
-    const chain = parseOptionalString(request.nextUrl.searchParams.get("chain"));
-    const protocol = parseOptionalString(request.nextUrl.searchParams.get("protocol"));
-    const interval = parseOptionalString(request.nextUrl.searchParams.get("interval"));
+    const limit = parseOptionalLimit(request.nextUrl.searchParams.get("limit"));
     const sinceSec = parseOptionalTimestamp(request.nextUrl.searchParams.get("since"), "since");
     const untilSec = parseOptionalTimestamp(request.nextUrl.searchParams.get("until"), "until");
 
     if (sinceSec !== undefined && untilSec !== undefined && sinceSec > untilSec) {
-      throw new LlamaApiError("since must be less than or equal to until.", 400, false);
+      throw new AlternativeApiError("since must be less than or equal to until.", 400, false);
     }
 
     const cacheKey = buildHttpCacheKey(request.nextUrl);
-    const cached =
-      await getCachedSuccessEnvelope<Awaited<ReturnType<typeof getLlamaMetricSeries>>>(cacheKey);
+    const cached = await getCachedSuccessEnvelope<FearGreedHistoryData>(cacheKey);
     if (cached) {
       logApiInfo({
-        event: "api.llama.metrics.cache_hit",
+        event: "api.fng.history.cache_hit",
         requestId,
         method: request.method,
         path: request.nextUrl.pathname,
@@ -125,49 +129,41 @@ export async function GET(request: NextRequest, context: { params: Promise<{ met
       return response;
     }
 
-    const options: Record<string, string | number | undefined> = {};
-    if (chain !== undefined) options["chain"] = chain;
-    if (protocol !== undefined) options["protocol"] = protocol;
-    if (interval !== undefined) options["interval"] = interval;
-    if (sinceSec !== undefined) options["sinceSec"] = sinceSec;
-    if (untilSec !== undefined) options["untilSec"] = untilSec;
+    const points = await getFearGreedHistory({
+      ...(limit !== undefined ? { limit } : {}),
+      ...(sinceSec !== undefined ? { sinceSec } : {}),
+      ...(untilSec !== undefined ? { untilSec } : {}),
+    });
 
-    const result = await getLlamaMetricSeries(
-      metric,
-      options as Parameters<typeof getLlamaMetricSeries>[1]
-    );
-
-    const asOf = result.points.at(-1)?.timestamp ?? new Date().toISOString();
+    const asOf = points.at(-1)?.timestamp ?? new Date().toISOString();
 
     logApiInfo({
-      event: "api.llama.metrics.success",
+      event: "api.fng.history.success",
       requestId,
       method: request.method,
       path: request.nextUrl.pathname,
       status: 200,
       durationMs: Date.now() - startedAt,
       meta: {
-        metric,
-        chain: chain ?? null,
-        protocol: protocol ?? null,
-        points: result.points.length,
+        points: points.length,
+        limit: limit ?? 100,
       },
     });
 
-    const successPayload: CachedSuccessEnvelope<typeof result> = {
-      source: "defillama",
+    const successPayload: CachedSuccessEnvelope<FearGreedHistoryData> = {
+      source: "alternative",
       asOf,
       freshnessSec: 0,
-      data: result,
+      data: {
+        points,
+      },
       meta: {
-        route: "/api/v1/llama/metrics/:metric",
-        metric,
-        chain: chain ?? null,
-        protocol: protocol ?? null,
+        route: "/api/v1/fng/history",
+        attribution: ALTERNATIVE_ATTRIBUTION,
       },
     };
 
-    await setCachedSuccessEnvelope(cacheKey, successPayload, CACHE_TTL_SECONDS["llama.metrics"]);
+    await setCachedSuccessEnvelope(cacheKey, successPayload, CACHE_TTL_SECONDS["fng.history"]);
 
     const response = jsonSuccess({
       ...successPayload,
@@ -177,24 +173,22 @@ export async function GET(request: NextRequest, context: { params: Promise<{ met
     response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
     return response;
   } catch (error) {
-    const llamaError = error as LlamaApiError;
-
+    const altError = error as AlternativeApiError;
     logApiError({
-      event: "api.llama.metrics.error",
+      event: "api.fng.history.error",
       requestId,
       method: request.method,
       path: request.nextUrl.pathname,
-      status: llamaError.status ?? 500,
+      status: altError.status ?? 500,
       durationMs: Date.now() - startedAt,
-      message: llamaError.message,
+      message: altError.message,
     });
-
     const response = jsonError({
-      code: "LLAMA_METRIC_FAILED",
-      message: llamaError.message || "Failed to fetch DefiLlama metric data.",
-      retryable: llamaError.retryable ?? true,
-      provider: "defillama",
-      status: llamaError.status ?? 500,
+      code: "FNG_HISTORY_FAILED",
+      message: altError.message || "Failed to fetch Fear and Greed history.",
+      retryable: altError.retryable ?? true,
+      provider: "alternative",
+      status: altError.status ?? 500,
       requestId,
     });
     response.headers.set("x-ratelimit-remaining", String(rl.remaining));

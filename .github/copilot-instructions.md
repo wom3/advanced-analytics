@@ -4,8 +4,9 @@
 
 - Active app lives in `defi-analytica/` (Next.js App Router + TypeScript strict mode).
 - API boundary is internal route handlers under `defi-analytica/app/api/v1/**`.
-- Provider-specific logic is isolated in adapters (`src/server/adapters/dune/client.ts`, `src/server/adapters/defillama/client.ts`, `src/server/adapters/coingecko/client.ts`).
+- Provider-specific logic is isolated in adapters (`src/server/adapters/dune/client.ts`, `src/server/adapters/defillama/client.ts`, `src/server/adapters/coingecko/client.ts`, `src/server/adapters/alternative/client.ts`, `src/server/adapters/exchange/client.ts`).
 - Shared API contracts are centralized in `src/server/api/envelope.ts` and used by every route.
+- Local data infra for development is defined in `defi-analytica/docker-compose.yml` (PostgreSQL + Redis).
 - `requirements.md` and `TODO.md` describe planned providers/features; implement only what exists unless asked.
 
 ## Request/Data Flow Patterns
@@ -28,14 +29,23 @@
 - Dune calls use `fetch` with `AbortSignal.timeout(120_000)` and `cache: "no-store"`.
 - In development, Dune key lookup prefers `.env.local` then `.env` in app root (`defi-analytica/`) before fallback to runtime env.
 
+## Implemented Non-Dune Routes
+
+- DefiLlama: `app/api/v1/llama/metrics/[metric]/route.ts`
+- CoinGecko: `app/api/v1/coingecko/market/[asset]/route.ts`
+- Alternative.me: `app/api/v1/fng/latest/route.ts`, `app/api/v1/fng/history/route.ts`
+
 ## Local Workflow (defi-analytica)
 
 - Install deps: `npm i`
+- Start local infra: `npm run infra:up`
 - Dev server: `npm run dev`
 - Lint (enforced zero warnings): `npm run lint`
 - Build production bundle: `npm run build`
 - Format/check: `npm run format` / `npm run format:check`
-- Environment template: `defi-analytica/.env.example` (`DUNE_API_KEY` needed for Dune-backed endpoints).
+- Stop local infra: `npm run infra:down`
+- Tail local infra logs: `npm run infra:logs`
+- Environment template: `defi-analytica/.env.example` (`DUNE_API_KEY` needed for Dune-backed endpoints; persistence/cache use `DATABASE_URL` and `REDIS_URL`; optional exchange route gated by `ENABLE_EXCHANGE_SIGNALS`).
 
 ## Project-Specific Coding Rules
 

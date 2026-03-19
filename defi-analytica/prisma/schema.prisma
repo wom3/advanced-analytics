@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ProviderRawSnapshot {
+  id          String   @id @default(cuid())
+  provider    String
+  resource    String
+  requestHash String
+  payloadJson Json
+  fetchedAt   DateTime @default(now())
+  statusCode  Int
+  requestId   String?
+
+  @@index([provider, resource, fetchedAt])
+  @@index([requestHash])
+  @@map("provider_raw_snapshots")
+}
+
+model NormalizedPoint {
+  id            String   @id @default(cuid())
+  provider      String
+  metric        String
+  assetOrSymbol String?
+  interval      String
+  timestamp     DateTime
+  valueNum      Float?
+  valueJson     Json?
+  asOf          DateTime
+  ingestedAt    DateTime @default(now())
+
+  @@unique([provider, metric, assetOrSymbol, interval, timestamp])
+  @@index([provider, metric, timestamp])
+  @@index([assetOrSymbol, interval, timestamp])
+  @@map("normalized_points")
+}
+
+model FeaturePoint {
+  id            String   @id @default(cuid())
+  feature       String
+  provider      String
+  assetOrSymbol String?
+  interval      String
+  timestamp     DateTime
+  value         Float
+  asOf          DateTime
+  computedAt    DateTime @default(now())
+
+  @@unique([feature, provider, assetOrSymbol, interval, timestamp])
+  @@index([feature, timestamp])
+  @@map("feature_points")
+}
+
+model SentimentScore {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @unique
+  score       Float
+  label       String
+  confidence  Float
+  factorsJson Json?
+  computedAt  DateTime @default(now())
+
+  @@index([timestamp])
+  @@map("sentiment_scores")
+}
+
+model ApiCacheIndex {
+  cacheKey  String   @id
+  provider  String
+  route     String
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([provider, route])
+  @@index([expiresAt])
+  @@map("api_cache_index")
+}

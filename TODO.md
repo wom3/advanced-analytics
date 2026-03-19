@@ -37,57 +37,57 @@
 
 ## Feature 06: Alternative.me Adapter
 
-- [ ] Implement latest fear and greed fetch
-- [ ] Implement historical fear and greed fetch
-- [ ] Add source attribution metadata in responses
+- [x] Implement latest fear and greed fetch
+- [x] Implement historical fear and greed fetch
+- [x] Add source attribution metadata in responses
 
 ## Feature 07: Optional Exchange Adapter
 
-- [ ] Implement candlestick data fetch for selected symbols
-- [ ] Compute realized volatility and momentum proxy fields
-- [ ] Add feature flag to enable or disable exchange signals
+- [x] Implement candlestick data fetch for selected symbols
+- [x] Compute realized volatility and momentum proxy fields
+- [x] Add feature flag to enable or disable exchange signals
 
 ## Feature 08: Data Persistence and Cache
 
-- [ ] Add PostgreSQL schema for raw, normalized, features, and scores
-- [ ] Add Redis cache layer for hot API responses
-- [ ] Add TTL policy by endpoint type
-- [ ] Add cache invalidation for scheduled refreshes
+- [x] Add PostgreSQL schema for raw, normalized, features, and scores
+- [x] Add Redis cache layer for hot API responses
+- [x] Add TTL policy by endpoint type
+- [x] Add cache invalidation for scheduled refreshes
 
 ## Feature 09: Feature Engineering Service
 
-- [ ] Build time alignment across provider data
-- [ ] Build rolling z-score normalization pipeline
-- [ ] Build missing-data handling and imputation rules
-- [ ] Emit factor contribution table per timestamp
+- [x] Build time alignment across provider data
+- [x] Build rolling z-score normalization pipeline
+- [x] Build missing-data handling and imputation rules
+- [x] Emit factor contribution table per timestamp
 
 ## Feature 10: Sentiment Scoring Service
 
-- [ ] Implement weighted factor score
-- [ ] Implement label classifier: bullish, neutral, bearish
-- [ ] Implement confidence score logic
-- [ ] Add configurable weights file and validation
+- [x] Implement weighted factor score
+- [x] Implement label classifier: bullish, neutral, bearish
+- [x] Implement confidence score logic
+- [x] Add configurable weights file and validation
 
 ## Feature 11: Dashboard Aggregation API
 
-- [ ] Implement /api/v1/dashboard/overview
-- [ ] Implement /api/v1/sentiment/score
-- [ ] Implement /api/v1/sentiment/history
-- [ ] Add freshness metadata and provider status block
+- [x] Implement /api/v1/dashboard/overview
+- [x] Implement /api/v1/sentiment/score
+- [x] Implement /api/v1/sentiment/history
+- [x] Add freshness metadata and provider status block
 
 ## Feature 12: Frontend Dashboard Core
 
-- [ ] Build /dashboard page with KPI cards
-- [ ] Build trend chart widgets with Chart.js
-- [ ] Build sentiment state panel
-- [ ] Add auto-refresh and stale-data warnings
+- [x] Build /dashboard page with KPI cards
+- [x] Build trend chart widgets with Chart.js
+- [x] Build sentiment state panel
+- [x] Add auto-refresh and stale-data warnings
 
 ## Feature 13: Sentiment Deep Dive Page
 
-- [ ] Build /dashboard/sentiment page
-- [ ] Add factor contribution charts
-- [ ] Add regime history timeline chart
-- [ ] Add confidence trend chart
+- [x] Build /dashboard/sentiment page
+- [x] Add factor contribution charts
+- [x] Add regime history timeline chart
+- [x] Add confidence trend chart
 
 ## Feature 14: Flows Deep Dive Page
 
