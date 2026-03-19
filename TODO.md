@@ -92,7 +92,7 @@
 ## Feature 14: Flows Deep Dive Page
 
 - [x] Build /dashboard/flows page
-- [ ] Add DEX volume and TVL flow charts
+- [x] Add DEX volume and TVL flow charts
 - [ ] Add protocol and chain filter controls
 - [ ] Add export to CSV and JSON actions
 

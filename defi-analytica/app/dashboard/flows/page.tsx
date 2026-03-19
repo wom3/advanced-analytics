@@ -1,4 +1,10 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+
+import type { ApiSuccess } from "@/src/server/api/envelope";
+import type { LlamaNormalizedSeries } from "@/src/server/adapters/defillama/client";
+
+import { FlowCharts } from "./flow-charts";
 
 export const metadata = {
   title: "Flows Deep Dive | defi-analytica",
@@ -6,12 +12,6 @@ export const metadata = {
 };
 
 const UPCOMING_SECTIONS = [
-  {
-    title: "DEX Volume and TVL Flow Charts",
-    description:
-      "Chart surface reserved for net flow direction, acceleration windows, and context overlays.",
-    status: "Planned in Feature 14 task 2",
-  },
   {
     title: "Protocol and Chain Filters",
     description:
@@ -26,7 +26,47 @@ const UPCOMING_SECTIONS = [
   },
 ] as const;
 
-export default function DashboardFlowsPage() {
+const FLOW_PARAMS = {
+  chain: "Ethereum",
+  interval: "1d",
+};
+
+async function loadFlowSeries(): Promise<{
+  volume: LlamaNormalizedSeries;
+  tvl: LlamaNormalizedSeries;
+}> {
+  const params = new URLSearchParams(FLOW_PARAMS);
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  if (!host) {
+    throw new Error("Missing host header for dashboard flows requests.");
+  }
+
+  const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
+  const volumeUrl = `${proto}://${host}/api/v1/llama/metrics/volume?${params.toString()}`;
+  const tvlUrl = `${proto}://${host}/api/v1/llama/metrics/tvl?${params.toString()}`;
+
+  const [volumeRes, tvlRes] = await Promise.all([
+    fetch(volumeUrl, { cache: "no-store" }),
+    fetch(tvlUrl, { cache: "no-store" }),
+  ]);
+
+  if (!volumeRes.ok || !tvlRes.ok) {
+    throw new Error("Failed to load flows chart data.");
+  }
+
+  const volumeEnvelope = (await volumeRes.json()) as ApiSuccess<LlamaNormalizedSeries>;
+  const tvlEnvelope = (await tvlRes.json()) as ApiSuccess<LlamaNormalizedSeries>;
+
+  return {
+    volume: volumeEnvelope.data,
+    tvl: tvlEnvelope.data,
+  };
+}
+
+export default async function DashboardFlowsPage() {
+  const { volume, tvl } = await loadFlowSeries();
+
   return (
     <main
       className="min-h-screen px-6 py-10 md:px-10"
@@ -55,19 +95,20 @@ export default function DashboardFlowsPage() {
               Route: <span className="font-medium text-slate-800">/dashboard/flows</span>
             </p>
             <p className="mt-1">
-              Status: <span className="font-medium text-slate-800">Scaffolded</span>
+              Status: <span className="font-medium text-slate-800">Task 2 implemented</span>
             </p>
           </div>
         </header>
 
+        <FlowCharts volumePoints={volume.points} tvlPoints={tvl.points} chain={FLOW_PARAMS.chain} />
+
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Page Foundation</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Upcoming Flows Enhancements</h2>
           <p className="mt-2 text-sm text-slate-600">
-            This initial implementation establishes route wiring, metadata, and page structure. Data
-            visualizations and interactive controls are intentionally deferred to the next Feature
-            14 tasks.
+            DEX volume and TVL flow charting is now active. The remaining Feature 14 tasks below are
+            intentionally deferred.
           </p>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
             {UPCOMING_SECTIONS.map((section) => (
               <article
                 key={section.title}
@@ -84,7 +125,7 @@ export default function DashboardFlowsPage() {
         </section>
 
         <footer className="mt-8 text-sm text-slate-600">
-          Feature 14 task 1 complete: flows route scaffold is available.
+          Feature 14 tasks 1-2 complete: flows route scaffold plus DEX volume and TVL flow charts.
           <Link
             href="/dashboard"
             className="ml-2 font-medium text-slate-900 underline decoration-slate-300 underline-offset-4"
