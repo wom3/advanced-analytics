@@ -5,6 +5,7 @@ import type { ApiSuccess } from "@/src/server/api/envelope";
 import type { DashboardOverviewResult } from "@/src/server/services/dashboard/service";
 
 import { LiveStatus } from "./live-status";
+import { CryptoCoinScene } from "./crypto-coin-scene";
 import { CryptoDynamicsScene } from "./crypto-dynamics-scene";
 import { MarketStateScene } from "./market-state-scene";
 import { TrendWidgets } from "./trend-widgets";
@@ -183,6 +184,26 @@ export default async function DashboardPage() {
           score={overview.score.score}
           confidence={overview.score.confidence}
         />
+
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-900">Crypto Coin Scene</h2>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium uppercase tracking-[0.08em] text-slate-600">
+              BTC 3D
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            A coin-centric 3D view to complement the broader market-state visualizations.
+          </p>
+          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <CryptoCoinScene
+              symbol={overview.market.asset.toUpperCase()}
+              {...(overview.market.latestPrice === null
+                ? {}
+                : { price: overview.market.latestPrice })}
+            />
+          </div>
+        </section>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
           <div className="flex items-center justify-between gap-3">
