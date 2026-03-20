@@ -157,6 +157,27 @@ Custom environment options:
 - `REFRESH_TIMEOUT_MS` (default: `20000`)
 - `REFRESH_DRY_RUN=true` (wrapper-level dry run)
 
+## Scheduled Refresh via GitHub Actions (Feature 16 Task 2)
+
+Workflow file:
+
+- `../.github/workflows/scheduled-refresh.yml`
+
+Triggers:
+
+- Scheduled every hour at minute 17 and 47 (UTC)
+- Manual run via `workflow_dispatch`
+
+Required repository secret:
+
+- `REFRESH_BASE_URL`: Deployed app base URL used by refresh targets (for example, `https://your-app.example.com`)
+
+The workflow installs dependencies in `defi-analytica/` and runs:
+
+```bash
+npm run refresh:data
+```
+
 ## Implemented API Endpoints
 
 Base: `/api/v1`

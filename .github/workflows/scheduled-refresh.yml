@@ -1,0 +1,50 @@
+name: Scheduled Data Refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Avoid top-of-hour contention windows where schedule delays are more common.
+    - cron: "17,47 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Refresh API Data Targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: defi-analytica
+    env:
+      REFRESH_BASE_URL: ${{ secrets.REFRESH_BASE_URL }}
+      REFRESH_TIMEOUT_MS: "30000"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: defi-analytica/package-lock.json
+
+      - name: Validate required refresh target URL
+        run: |
+          if [[ -z "${REFRESH_BASE_URL}" ]]; then
+            echo "Missing required repository secret: REFRESH_BASE_URL"
+            echo "Set it to the deployed app base URL, for example: https://your-app.example.com"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Execute scheduled refresh
+        run: npm run refresh:data

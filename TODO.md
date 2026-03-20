@@ -106,7 +106,7 @@
 ## Feature 16: Scheduler and Pipelines
 
 - [x] Add local cron scripts for data refresh
-- [ ] Add GitHub Actions workflow for scheduled refresh
+- [x] Add GitHub Actions workflow for scheduled refresh
 - [ ] Add retry and alert policy for failed jobs
 - [ ] Add job run audit log and metrics
 
