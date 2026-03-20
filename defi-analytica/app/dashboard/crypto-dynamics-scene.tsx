@@ -1,10 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
 
 import type { MarketState } from "@/app/dashboard/market-state-scene";
 import type { CryptoDynamicsSceneCanvasProps } from "@/app/dashboard/crypto-dynamics-scene-canvas";
+import { useLowPowerMode, usePrefersReducedMotion } from "@/app/dashboard/scene-preferences";
 
 type CryptoDynamicsSceneProps = {
   state?: MarketState;
@@ -27,28 +27,6 @@ const LazyCryptoDynamicsSceneCanvas = dynamic<CryptoDynamicsSceneCanvasProps>(
   }
 );
 
-function detectLowPowerMode(): boolean {
-  if (typeof navigator === "undefined") {
-    return false;
-  }
-
-  type NetworkInformation = {
-    saveData?: boolean;
-    effectiveType?: string;
-  };
-
-  const connection = (navigator as Navigator & { connection?: NetworkInformation }).connection;
-  const saveData = connection?.saveData === true;
-  const slowNetwork = connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g";
-  const lowConcurrency = navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
-
-  const navWithDeviceMemory = navigator as Navigator & { deviceMemory?: number };
-  const lowMemory =
-    typeof navWithDeviceMemory.deviceMemory === "number" && navWithDeviceMemory.deviceMemory <= 4;
-
-  return saveData || slowNetwork || lowConcurrency || lowMemory;
-}
-
 function toneClass(state: MarketState): string {
   if (state === "bullish") {
     return "border-emerald-300/40 bg-emerald-400/10 text-emerald-200";
@@ -64,27 +42,11 @@ export function CryptoDynamicsScene({
   score = 0,
   confidence = 0,
 }: CryptoDynamicsSceneProps) {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
-    typeof window === "undefined"
-      ? false
-      : window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-  const [isLowPowerMode] = useState(() => detectLowPowerMode());
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const isLowPowerMode = useLowPowerMode();
 
   const sentimentScore = Number.isFinite(score) ? score : 0;
   const sentimentConfidence = Number.isFinite(confidence) ? confidence : 0;
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onChange = (event: MediaQueryListEvent) => {
-      setPrefersReducedMotion(event.matches);
-    };
-
-    mediaQuery.addEventListener("change", onChange);
-    return () => {
-      mediaQuery.removeEventListener("change", onChange);
-    };
-  }, []);
 
   return (
     <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-sm">

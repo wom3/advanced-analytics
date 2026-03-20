@@ -174,6 +174,8 @@ export function MarketStateSceneCanvas(props: MarketStateSceneCanvasProps) {
       camera={{ position: [0, 0, 4.6], fov: 45 }}
       dpr={[1, 1.75]}
       frameloop={props.animate ? "always" : "demand"}
+      aria-hidden="true"
+      role="presentation"
     >
       <AnimatedScene {...props} />
     </Canvas>

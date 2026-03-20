@@ -34,7 +34,7 @@ export const CryptoCoinScene: React.FC<CryptoCoinSceneProps> = ({ symbol, price,
 
   return (
     <div style={{ width: "100%", height: "400px", position: "relative" }}>
-      <Canvas camera={{ position: [0, 1.5, 3], fov: 50 }}>
+      <Canvas camera={{ position: [0, 1.5, 3], fov: 50 }} aria-hidden="true" role="presentation">
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 5, 2]} intensity={1} />
 

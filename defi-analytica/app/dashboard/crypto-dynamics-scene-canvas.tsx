@@ -210,6 +210,8 @@ export function CryptoDynamicsSceneCanvas(props: CryptoDynamicsSceneCanvasProps)
       camera={{ position: [0, 0, 6], fov: 44 }}
       dpr={[1, 1.7]}
       frameloop={props.animate ? "always" : "demand"}
+      aria-hidden="true"
+      role="presentation"
     >
       <CryptoDynamicsGeometry {...props} />
     </Canvas>
