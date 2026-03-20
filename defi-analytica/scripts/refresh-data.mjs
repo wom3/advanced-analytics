@@ -17,9 +17,14 @@ const REFRESH_TARGETS = [
 ];
 
 function parseArgs(argv) {
+  const envTimeoutRaw = process.env.REFRESH_TIMEOUT_MS;
+  const envTimeout = envTimeoutRaw !== undefined ? Number(envTimeoutRaw) : undefined;
+  const initialTimeoutMs =
+    envTimeout !== undefined && Number.isFinite(envTimeout) && envTimeout > 0 ? envTimeout : 20_000;
+
   const args = {
     baseUrl: process.env.REFRESH_BASE_URL || DEFAULT_BASE_URL,
-    timeoutMs: Number(process.env.REFRESH_TIMEOUT_MS || 20_000),
+    timeoutMs: initialTimeoutMs,
     dryRun: false,
   };
 
@@ -135,10 +140,15 @@ async function main() {
         );
       } else {
         failed += 1;
-        const message =
-          typeof result.payload?.error?.message === "string"
-            ? result.payload.error.message
-            : "non-2xx response";
+        let message = "non-2xx response";
+        const payload = result.payload;
+        if (payload && typeof payload === "object") {
+          if (typeof payload.message === "string" && payload.message.length > 0) {
+            message = payload.message;
+          } else if (typeof payload.code === "string" || typeof payload.code === "number") {
+            message = String(payload.code);
+          }
+        }
         console.error(
           `[refresh-data] failed ${target.name} status=${result.status} message=${message}${requestIdSegment}`
         );
