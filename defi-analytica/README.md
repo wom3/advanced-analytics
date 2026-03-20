@@ -183,6 +183,16 @@ Retry and alert policy (Feature 16 Task 3):
 - Emits GitHub Actions error annotation when all attempts fail
 - Sends webhook alert on failure when `REFRESH_ALERT_WEBHOOK_URL` is configured
 
+Job run audit log and metrics (Feature 16 Task 4):
+
+- Captures run metadata (`startedAt`, `endedAt`, `durationSec`, status, attempts used)
+- Publishes a workflow job summary table via `$GITHUB_STEP_SUMMARY`
+- Uploads per-run audit artifact named `refresh-audit-<run_id>-<run_attempt>` containing:
+  - `run-audit.json`
+  - `metrics.txt`
+  - `attempts.log`
+- Retains audit artifacts for 14 days
+
 The workflow installs dependencies in `defi-analytica/` and runs:
 
 ```bash

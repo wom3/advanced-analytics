@@ -49,10 +49,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Initialize refresh audit context
+        run: |
+          start_epoch="$(date +%s)"
+          start_iso="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          audit_dir=".refresh-audit"
+
+          mkdir -p "${audit_dir}"
+          echo "${start_epoch}" > "${audit_dir}/start_epoch.txt"
+
+          echo "REFRESH_AUDIT_DIR=${audit_dir}" >> "$GITHUB_ENV"
+          echo "REFRESH_START_EPOCH=${start_epoch}" >> "$GITHUB_ENV"
+          echo "REFRESH_START_ISO=${start_iso}" >> "$GITHUB_ENV"
+
       - name: Execute scheduled refresh with retry policy
         run: |
           max_attempts="${REFRESH_RETRY_ATTEMPTS}"
           backoff_sec="${REFRESH_RETRY_BACKOFF_SEC}"
+          attempt_log="${REFRESH_AUDIT_DIR}/attempts.log"
+
+          : > "${attempt_log}"
 
           if ! [[ "${max_attempts}" =~ ^[0-9]+$ ]] || [[ "${max_attempts}" -lt 1 ]]; then
             echo "REFRESH_RETRY_ATTEMPTS must be a positive integer."
@@ -69,11 +85,18 @@ jobs:
             echo "Refresh attempt ${attempt}/${max_attempts}"
 
             if npm run refresh:data; then
+              echo "${attempt},success,$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "${attempt_log}"
+              echo "REFRESH_ATTEMPTS_USED=${attempt}" >> "$GITHUB_ENV"
+              echo "REFRESH_FINAL_STATUS=success" >> "$GITHUB_ENV"
               echo "Refresh succeeded on attempt ${attempt}."
               exit 0
             fi
 
+            echo "${attempt},failure,$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "${attempt_log}"
+
             if [[ "${attempt}" -eq "${max_attempts}" ]]; then
+              echo "REFRESH_ATTEMPTS_USED=${attempt}" >> "$GITHUB_ENV"
+              echo "REFRESH_FINAL_STATUS=failure" >> "$GITHUB_ENV"
               echo "Refresh failed after ${max_attempts} attempt(s)."
               exit 1
             fi
@@ -83,6 +106,83 @@ jobs:
             sleep "${sleep_for}"
             attempt=$((attempt + 1))
           done
+
+      - name: Build refresh audit artifact
+        if: always()
+        run: |
+          end_epoch="$(date +%s)"
+          end_iso="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          start_epoch="${REFRESH_START_EPOCH:-${end_epoch}}"
+          duration_sec=$((end_epoch - start_epoch))
+
+          final_status="${REFRESH_FINAL_STATUS:-${{ job.status }}}"
+          attempts_used="${REFRESH_ATTEMPTS_USED:-0}"
+          max_attempts="${REFRESH_RETRY_ATTEMPTS}"
+
+          if [[ "${duration_sec}" -lt 0 ]]; then
+            duration_sec=0
+          fi
+
+          cat > "${REFRESH_AUDIT_DIR}/run-audit.json" <<JSON
+          {
+            "repository": "${{ github.repository }}",
+            "workflow": "${{ github.workflow }}",
+            "job": "${{ github.job }}",
+            "runId": "${{ github.run_id }}",
+            "runAttempt": "${{ github.run_attempt }}",
+            "event": "${{ github.event_name }}",
+            "ref": "${{ github.ref }}",
+            "actor": "${{ github.actor }}",
+            "runUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "startedAt": "${REFRESH_START_ISO}",
+            "endedAt": "${end_iso}",
+            "durationSec": ${duration_sec},
+            "status": "${final_status}",
+            "attemptsUsed": ${attempts_used},
+            "maxAttempts": ${max_attempts},
+            "baseUrlConfigured": $(if [[ -n "${REFRESH_BASE_URL}" ]]; then echo true; else echo false; fi)
+          }
+          JSON
+
+          {
+            echo "run_id=${{ github.run_id }}"
+            echo "run_attempt=${{ github.run_attempt }}"
+            echo "status=${final_status}"
+            echo "attempts_used=${attempts_used}"
+            echo "max_attempts=${max_attempts}"
+            echo "duration_sec=${duration_sec}"
+            echo "started_at=${REFRESH_START_ISO}"
+            echo "ended_at=${end_iso}"
+            echo "run_url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > "${REFRESH_AUDIT_DIR}/metrics.txt"
+
+      - name: Publish refresh audit metrics summary
+        if: always()
+        run: |
+          final_status="${REFRESH_FINAL_STATUS:-${{ job.status }}}"
+          attempts_used="${REFRESH_ATTEMPTS_USED:-0}"
+
+          {
+            echo "## Scheduled Refresh Metrics"
+            echo
+            echo "| Metric | Value |"
+            echo "| --- | --- |"
+            echo "| Status | ${final_status} |"
+            echo "| Attempts Used | ${attempts_used}/${REFRESH_RETRY_ATTEMPTS} |"
+            echo "| Started At (UTC) | ${REFRESH_START_ISO} |"
+            echo "| Run URL | https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} |"
+            echo
+            echo "Audit files uploaded as workflow artifact: \`refresh-audit-${{ github.run_id }}-${{ github.run_attempt }}\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload refresh audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refresh-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ github.workspace }}/defi-analytica/.refresh-audit/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Emit failure annotation
         if: failure()
