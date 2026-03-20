@@ -1,0 +1,8 @@
+# Example crontab entries for local data refresh
+# Install with: crontab -e
+#
+# Every 15 minutes, run local refresh against the default dev server.
+*/15 * * * * cd /home/postgres/code/blockchain/advanced-analytics/defi-analytica && ./scripts/cron-refresh-local.sh >> /tmp/defi-analytica-refresh.log 2>&1
+
+# Dry-run every hour for diagnostics (optional).
+# 0 * * * * cd /home/postgres/code/blockchain/advanced-analytics/defi-analytica && REFRESH_DRY_RUN=true ./scripts/cron-refresh-local.sh >> /tmp/defi-analytica-refresh-dry.log 2>&1

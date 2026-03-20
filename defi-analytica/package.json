@@ -19,7 +19,10 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:format": "prisma format",
-    "cache:invalidate": "node scripts/invalidate-cache.mjs"
+    "cache:invalidate": "node scripts/invalidate-cache.mjs",
+    "refresh:data": "node scripts/refresh-data.mjs",
+    "refresh:data:dry": "node scripts/refresh-data.mjs --dry-run",
+    "cron:refresh:local": "bash scripts/cron-refresh-local.sh"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

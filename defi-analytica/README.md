@@ -60,6 +60,9 @@ Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream a
 - `npm run prisma:studio` - open Prisma Studio UI
 - `npm run prisma:format` - format `prisma/schema.prisma`
 - `npm run cache:invalidate` - invalidate Redis API cache keys (optionally by group)
+- `npm run refresh:data` - call key `/api/v1` endpoints to refresh local data/cache
+- `npm run refresh:data:dry` - print refresh targets without making network calls
+- `npm run cron:refresh:local` - cron-friendly wrapper for local refresh execution
 
 ## Local Data Infra (Docker Compose)
 
@@ -128,6 +131,31 @@ You can also invalidate Feature 11 groups:
 ```bash
 REDIS_URL=redis://localhost:6379 npm run cache:invalidate -- sentiment.score sentiment.history dashboard.overview
 ```
+
+## Local Cron Refresh Script (Feature 16 Task 1)
+
+Use the refresh runner to warm key `/api/v1` endpoints locally:
+
+```bash
+npm run refresh:data
+```
+
+Dry-run smoke check:
+
+```bash
+npm run refresh:data:dry
+```
+
+For cron, use:
+
+- `scripts/cron-refresh-local.sh` (wrapper script)
+- `scripts/cron-refresh-local.example` (example crontab entries)
+
+Custom environment options:
+
+- `REFRESH_BASE_URL` (default: `http://localhost:3000`)
+- `REFRESH_TIMEOUT_MS` (default: `20000`)
+- `REFRESH_DRY_RUN=true` (wrapper-level dry run)
 
 ## Implemented API Endpoints
 
