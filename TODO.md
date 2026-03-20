@@ -98,10 +98,10 @@
 
 ## Feature 15: Three.js Experience
 
-- [ ] Build a single market-state scene component
-- [ ] Map sentiment score to scene properties
-- [ ] Add reduced-motion and low-power fallback
-- [ ] Lazy-load Three.js bundle to preserve page speed
+- [x] Build a single market-state scene component
+- [x] Map sentiment score to scene properties
+- [x] Add reduced-motion and low-power fallback
+- [x] Lazy-load Three.js bundle to preserve page speed
 
 ## Feature 16: Scheduler and Pipelines
 
