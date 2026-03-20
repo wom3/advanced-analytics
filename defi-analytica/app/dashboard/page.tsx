@@ -5,6 +5,7 @@ import type { ApiSuccess } from "@/src/server/api/envelope";
 import type { DashboardOverviewResult } from "@/src/server/services/dashboard/service";
 
 import { LiveStatus } from "./live-status";
+import { CryptoDynamicsScene } from "./crypto-dynamics-scene";
 import { MarketStateScene } from "./market-state-scene";
 import { TrendWidgets } from "./trend-widgets";
 
@@ -172,6 +173,12 @@ export default async function DashboardPage() {
         />
 
         <MarketStateScene
+          state={overview.score.label}
+          score={overview.score.score}
+          confidence={overview.score.confidence}
+        />
+
+        <CryptoDynamicsScene
           state={overview.score.label}
           score={overview.score.score}
           confidence={overview.score.confidence}
