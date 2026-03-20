@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Group, Mesh } from "three";
 
 type MarketState = "bullish" | "neutral" | "bearish";
@@ -67,12 +67,7 @@ function dynamicsForSentiment(score: number, confidence: number): SceneDynamics 
   const directionalBoost = normalizedScore > 0 ? normalizedScore : 0;
 
   return {
-    background:
-      normalizedScore > 0
-        ? "#f0fdf4"
-        : normalizedScore < 0
-          ? "#fff1f2"
-          : "#f8fafc",
+    background: normalizedScore > 0 ? "#f0fdf4" : normalizedScore < 0 ? "#fff1f2" : "#f8fafc",
     groupRotateYSpeed: 0.22 + confidence01 * 0.2 + energy * 0.08,
     groupTiltAmplitude: 0.05 + confidence01 * 0.05,
     corePulseAmplitude: 0.035 + confidence01 * 0.045 + energy * 0.025,
@@ -86,14 +81,38 @@ function dynamicsForSentiment(score: number, confidence: number): SceneDynamics 
   };
 }
 
+function detectLowPowerMode(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  type NetworkInformation = {
+    saveData?: boolean;
+    effectiveType?: string;
+  };
+
+  const connection = (navigator as Navigator & { connection?: NetworkInformation }).connection;
+  const saveData = connection?.saveData === true;
+  const slowNetwork = connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g";
+  const lowConcurrency = navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
+
+  const navWithDeviceMemory = navigator as Navigator & { deviceMemory?: number };
+  const lowMemory =
+    typeof navWithDeviceMemory.deviceMemory === "number" && navWithDeviceMemory.deviceMemory <= 4;
+
+  return saveData || slowNetwork || lowConcurrency || lowMemory;
+}
+
 function AnimatedScene({
   state,
   score,
   confidence,
+  animate,
 }: {
   state: MarketState;
   score: number;
   confidence: number;
+  animate: boolean;
 }) {
   const groupRef = useRef<Group>(null);
   const coreRef = useRef<Mesh>(null);
@@ -104,6 +123,10 @@ function AnimatedScene({
   const dynamics = useMemo(() => dynamicsForSentiment(score, confidence), [confidence, score]);
 
   useFrame((clockState) => {
+    if (!animate) {
+      return;
+    }
+
     const t = clockState.clock.getElapsedTime();
 
     if (groupRef.current) {
@@ -179,8 +202,41 @@ export function MarketStateScene({
   score = 0,
   confidence = 0,
 }: MarketStateSceneProps) {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
+    typeof window === "undefined"
+      ? false
+      : window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+  const [isLowPowerMode] = useState(() => detectLowPowerMode());
+
   const sentimentScore = Number.isFinite(score) ? score : 0;
   const sentimentConfidence = Number.isFinite(confidence) ? confidence : 0;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    mediaQuery.addEventListener("change", onChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", onChange);
+    };
+  }, []);
+
+  const fallbackToneClass =
+    state === "bullish"
+      ? "border-emerald-200 bg-emerald-50"
+      : state === "bearish"
+        ? "border-rose-200 bg-rose-50"
+        : "border-sky-200 bg-sky-50";
+
+  const fallbackOrbClass =
+    state === "bullish" ? "bg-emerald-500" : state === "bearish" ? "bg-rose-500" : "bg-sky-500";
+
+  const showCanvas = !isLowPowerMode;
+  const animate = !prefersReducedMotion;
 
   return (
     <section className="mt-8 rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-sm backdrop-blur">
@@ -202,10 +258,40 @@ export function MarketStateScene({
         Scene lighting and motion are driven by live sentiment score strength and model confidence.
       </p>
       <div className="mt-4 h-72 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-        <Canvas camera={{ position: [0, 0, 4.6], fov: 45 }} dpr={[1, 1.75]}>
-          <AnimatedScene state={state} score={sentimentScore} confidence={sentimentConfidence} />
-        </Canvas>
+        {showCanvas ? (
+          <Canvas
+            camera={{ position: [0, 0, 4.6], fov: 45 }}
+            dpr={[1, 1.75]}
+            frameloop={animate ? "always" : "demand"}
+          >
+            <AnimatedScene
+              state={state}
+              score={sentimentScore}
+              confidence={sentimentConfidence}
+              animate={animate}
+            />
+          </Canvas>
+        ) : (
+          <div
+            className={`flex h-full w-full items-center justify-center p-5 ${fallbackToneClass}`}
+          >
+            <div className="text-center">
+              <div className={`mx-auto h-16 w-16 rounded-full shadow-sm ${fallbackOrbClass}`} />
+              <p className="mt-3 text-sm font-semibold text-slate-800">
+                Low-power fallback mode active
+              </p>
+              <p className="mt-1 text-xs text-slate-600">
+                WebGL scene paused to reduce device power and data usage.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
+      {prefersReducedMotion ? (
+        <p className="mt-2 text-xs text-slate-500">
+          Reduced-motion preference detected: scene animation is paused.
+        </p>
+      ) : null}
     </section>
   );
 }

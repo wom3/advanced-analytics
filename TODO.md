@@ -100,7 +100,7 @@
 
 - [x] Build a single market-state scene component
 - [x] Map sentiment score to scene properties
-- [ ] Add reduced-motion and low-power fallback
+- [x] Add reduced-motion and low-power fallback
 - [ ] Lazy-load Three.js bundle to preserve page speed
 
 ## Feature 16: Scheduler and Pipelines
