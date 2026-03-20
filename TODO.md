@@ -107,7 +107,7 @@
 
 - [x] Add local cron scripts for data refresh
 - [x] Add GitHub Actions workflow for scheduled refresh
-- [ ] Add retry and alert policy for failed jobs
+- [x] Add retry and alert policy for failed jobs
 - [ ] Add job run audit log and metrics
 
 ## Feature 17: Testing

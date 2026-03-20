@@ -24,6 +24,9 @@ jobs:
     env:
       REFRESH_BASE_URL: ${{ secrets.REFRESH_BASE_URL }}
       REFRESH_TIMEOUT_MS: "30000"
+      REFRESH_RETRY_ATTEMPTS: "3"
+      REFRESH_RETRY_BACKOFF_SEC: "30"
+      REFRESH_ALERT_WEBHOOK_URL: ${{ secrets.REFRESH_ALERT_WEBHOOK_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -46,5 +49,62 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Execute scheduled refresh
-        run: npm run refresh:data
+      - name: Execute scheduled refresh with retry policy
+        run: |
+          max_attempts="${REFRESH_RETRY_ATTEMPTS}"
+          backoff_sec="${REFRESH_RETRY_BACKOFF_SEC}"
+
+          if ! [[ "${max_attempts}" =~ ^[0-9]+$ ]] || [[ "${max_attempts}" -lt 1 ]]; then
+            echo "REFRESH_RETRY_ATTEMPTS must be a positive integer."
+            exit 1
+          fi
+
+          if ! [[ "${backoff_sec}" =~ ^[0-9]+$ ]] || [[ "${backoff_sec}" -lt 1 ]]; then
+            echo "REFRESH_RETRY_BACKOFF_SEC must be a positive integer."
+            exit 1
+          fi
+
+          attempt=1
+          while [[ "${attempt}" -le "${max_attempts}" ]]; do
+            echo "Refresh attempt ${attempt}/${max_attempts}"
+
+            if npm run refresh:data; then
+              echo "Refresh succeeded on attempt ${attempt}."
+              exit 0
+            fi
+
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
+              echo "Refresh failed after ${max_attempts} attempt(s)."
+              exit 1
+            fi
+
+            sleep_for=$((backoff_sec * attempt))
+            echo "Attempt ${attempt} failed. Retrying in ${sleep_for}s..."
+            sleep "${sleep_for}"
+            attempt=$((attempt + 1))
+          done
+
+      - name: Emit failure annotation
+        if: failure()
+        run: |
+          echo "::error title=Scheduled data refresh failed::Retry policy exhausted. Review workflow logs and endpoint health."
+
+      - name: Send webhook alert on failure
+        if: failure() && env.REFRESH_ALERT_WEBHOOK_URL != ''
+        run: |
+          payload=$(cat <<'JSON'
+          {
+            "text": "[defi-analytica] Scheduled data refresh failed",
+            "repository": "${{ github.repository }}",
+            "workflow": "${{ github.workflow }}",
+            "run_id": "${{ github.run_id }}",
+            "run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "event": "${{ github.event_name }}"
+          }
+          JSON
+          )
+
+          curl --fail --silent --show-error \
+            --header "content-type: application/json" \
+            --data "${payload}" \
+            "${REFRESH_ALERT_WEBHOOK_URL}"

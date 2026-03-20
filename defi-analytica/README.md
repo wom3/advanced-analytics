@@ -172,6 +172,17 @@ Required repository secret:
 
 - `REFRESH_BASE_URL`: Deployed app base URL used by refresh targets (for example, `https://your-app.example.com`)
 
+Optional repository secret for alerting:
+
+- `REFRESH_ALERT_WEBHOOK_URL`: Webhook endpoint for failure notifications (Slack/Teams/custom webhook)
+
+Retry and alert policy (Feature 16 Task 3):
+
+- Retries failed refresh runs up to `3` attempts by default
+- Uses linear backoff: `30s`, `60s` before final attempt
+- Emits GitHub Actions error annotation when all attempts fail
+- Sends webhook alert on failure when `REFRESH_ALERT_WEBHOOK_URL` is configured
+
 The workflow installs dependencies in `defi-analytica/` and runs:
 
 ```bash
