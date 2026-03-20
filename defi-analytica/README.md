@@ -60,6 +60,9 @@ Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream a
 - `npm run prisma:studio` - open Prisma Studio UI
 - `npm run prisma:format` - format `prisma/schema.prisma`
 - `npm run cache:invalidate` - invalidate Redis API cache keys (optionally by group)
+- `npm run refresh:data` - call key `/api/v1` endpoints to refresh local data/cache
+- `npm run refresh:data:dry` - print refresh targets without making network calls
+- `npm run cron:refresh:local` - cron-friendly wrapper for local refresh execution
 
 ## Local Data Infra (Docker Compose)
 
@@ -127,6 +130,73 @@ You can also invalidate Feature 11 groups:
 
 ```bash
 REDIS_URL=redis://localhost:6379 npm run cache:invalidate -- sentiment.score sentiment.history dashboard.overview
+```
+
+## Local Cron Refresh Script (Feature 16 Task 1)
+
+Use the refresh runner to warm key `/api/v1` endpoints locally:
+
+```bash
+npm run refresh:data
+```
+
+Dry-run smoke check:
+
+```bash
+npm run refresh:data:dry
+```
+
+For cron, use:
+
+- `scripts/cron-refresh-local.sh` (wrapper script)
+- `scripts/cron-refresh-local.example` (example crontab entries)
+
+Custom environment options:
+
+- `REFRESH_BASE_URL` (default: `http://localhost:3000`)
+- `REFRESH_TIMEOUT_MS` (default: `20000`)
+- `REFRESH_DRY_RUN=true` (wrapper-level dry run)
+
+## Scheduled Refresh via GitHub Actions (Feature 16 Task 2)
+
+Workflow file:
+
+- `../.github/workflows/scheduled-refresh.yml`
+
+Triggers:
+
+- Scheduled every hour at minute 17 and 47 (UTC)
+- Manual run via `workflow_dispatch`
+
+Required repository secret:
+
+- `REFRESH_BASE_URL`: Deployed app base URL used by refresh targets (for example, `https://your-app.example.com`)
+
+Optional repository secret for alerting:
+
+- `REFRESH_ALERT_WEBHOOK_URL`: Webhook endpoint for failure notifications (Slack/Teams/custom webhook)
+
+Retry and alert policy (Feature 16 Task 3):
+
+- Retries failed refresh runs up to `3` attempts by default
+- Uses linear backoff: `30s`, `60s` before final attempt
+- Emits GitHub Actions error annotation when all attempts fail
+- Sends webhook alert on failure when `REFRESH_ALERT_WEBHOOK_URL` is configured
+
+Job run audit log and metrics (Feature 16 Task 4):
+
+- Captures run metadata (`startedAt`, `endedAt`, `durationSec`, status, attempts used)
+- Publishes a workflow job summary table via `$GITHUB_STEP_SUMMARY`
+- Uploads per-run audit artifact named `refresh-audit-<run_id>-<run_attempt>` containing:
+  - `run-audit.json`
+  - `metrics.txt`
+  - `attempts.log`
+- Retains audit artifacts for 14 days
+
+The workflow installs dependencies in `defi-analytica/` and runs:
+
+```bash
+npm run refresh:data
 ```
 
 ## Implemented API Endpoints
