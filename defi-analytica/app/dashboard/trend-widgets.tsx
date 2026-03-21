@@ -170,7 +170,7 @@ export function TrendWidgets({ points }: TrendWidgetsProps) {
     return () => {
       window.cancelAnimationFrame(raf);
     };
-  }, [chartPoints.length]);
+  }, [chartPoints]);
 
   const labels = chartPoints.map((point) => shortTimeLabel(point.timestamp));
 
