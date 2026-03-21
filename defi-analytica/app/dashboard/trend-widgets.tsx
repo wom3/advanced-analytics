@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useRef } from "react";
 
 import {
   CategoryScale,
@@ -27,6 +28,22 @@ type TrendWidgetsProps = {
   points: TrendPoint[];
 };
 
+type TrendChartInstance = ChartJS<"line", number[], string>;
+const isDev = process.env.NODE_ENV !== "production";
+
+function logTrendTelemetry(message: string, payload?: Record<string, number | string | boolean>) {
+  if (!isDev) {
+    return;
+  }
+
+  if (payload) {
+    console.debug(`[trend-widgets] ${message}`, payload);
+    return;
+  }
+
+  console.debug(`[trend-widgets] ${message}`);
+}
+
 function shortTimeLabel(value: string): string {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) {
@@ -46,6 +63,7 @@ const gridColor = "rgba(148, 163, 184, 0.2)";
 const sharedOptions: ChartOptions<"line"> = {
   responsive: true,
   maintainAspectRatio: false,
+  resizeDelay: 100,
   interaction: {
     mode: "index",
     intersect: false,
@@ -79,14 +97,89 @@ const sharedOptions: ChartOptions<"line"> = {
 };
 
 export function TrendWidgets({ points }: TrendWidgetsProps) {
-  const labels = points.map((point) => shortTimeLabel(point.timestamp));
+  const scoreChartRef = useRef<TrendChartInstance | null>(null);
+  const confidenceChartRef = useRef<TrendChartInstance | null>(null);
+  const lastPointCountRef = useRef<number | null>(null);
+
+  const normalizedPoints = useMemo(
+    () =>
+      points.filter((point) => {
+        const timestampMs = Date.parse(point.timestamp);
+        return (
+          Number.isFinite(timestampMs) &&
+          Number.isFinite(point.score) &&
+          Number.isFinite(point.confidence)
+        );
+      }),
+    [points]
+  );
+
+  const chartPoints = normalizedPoints;
+
+  useEffect(() => {
+    const previousCount = lastPointCountRef.current;
+    const currentCount = chartPoints.length;
+
+    if (
+      previousCount === null ||
+      previousCount !== currentCount ||
+      currentCount !== points.length
+    ) {
+      logTrendTelemetry("point-count", {
+        receivedPoints: points.length,
+        normalizedPoints: currentCount,
+        droppedPoints: Math.max(points.length - currentCount, 0),
+        previousNormalizedPoints: previousCount ?? -1,
+      });
+    }
+
+    lastPointCountRef.current = currentCount;
+  }, [chartPoints.length, points.length]);
+
+  useEffect(() => {
+    const raf = window.requestAnimationFrame(() => {
+      const scoreBefore = scoreChartRef.current
+        ? {
+            width: scoreChartRef.current.width,
+            height: scoreChartRef.current.height,
+          }
+        : null;
+      const confidenceBefore = confidenceChartRef.current
+        ? {
+            width: confidenceChartRef.current.width,
+            height: confidenceChartRef.current.height,
+          }
+        : null;
+
+      scoreChartRef.current?.resize();
+      confidenceChartRef.current?.resize();
+
+      logTrendTelemetry("resize-pass", {
+        chartPoints: chartPoints.length,
+        scoreWidthBefore: scoreBefore?.width ?? -1,
+        scoreHeightBefore: scoreBefore?.height ?? -1,
+        scoreWidthAfter: scoreChartRef.current?.width ?? -1,
+        scoreHeightAfter: scoreChartRef.current?.height ?? -1,
+        confidenceWidthBefore: confidenceBefore?.width ?? -1,
+        confidenceHeightBefore: confidenceBefore?.height ?? -1,
+        confidenceWidthAfter: confidenceChartRef.current?.width ?? -1,
+        confidenceHeightAfter: confidenceChartRef.current?.height ?? -1,
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+    };
+  }, [chartPoints.length]);
+
+  const labels = chartPoints.map((point) => shortTimeLabel(point.timestamp));
 
   const scoreChartData = {
     labels,
     datasets: [
       {
         label: "Composite Score",
-        data: points.map((point) => Number(point.score.toFixed(4))),
+        data: chartPoints.map((point) => Number(point.score.toFixed(4))),
         borderColor: "#0ea5e9",
         backgroundColor: "rgba(14, 165, 233, 0.18)",
         pointRadius: 1.8,
@@ -97,7 +190,7 @@ export function TrendWidgets({ points }: TrendWidgetsProps) {
       },
       {
         label: "Bullish Threshold",
-        data: points.map(() => 1),
+        data: chartPoints.map(() => 1),
         borderColor: "#10b981",
         borderDash: [6, 6],
         pointRadius: 0,
@@ -105,7 +198,7 @@ export function TrendWidgets({ points }: TrendWidgetsProps) {
       },
       {
         label: "Bearish Threshold",
-        data: points.map(() => -1),
+        data: chartPoints.map(() => -1),
         borderColor: "#f43f5e",
         borderDash: [6, 6],
         pointRadius: 0,
@@ -119,7 +212,7 @@ export function TrendWidgets({ points }: TrendWidgetsProps) {
     datasets: [
       {
         label: "Confidence (%)",
-        data: points.map((point) => Number((point.confidence * 100).toFixed(2))),
+        data: chartPoints.map((point) => Number((point.confidence * 100).toFixed(2))),
         borderColor: "#7c3aed",
         backgroundColor: "rgba(124, 58, 237, 0.16)",
         pointRadius: 1.8,
@@ -146,8 +239,19 @@ export function TrendWidgets({ points }: TrendWidgetsProps) {
         <p className="mt-1 text-xs text-slate-500">
           Rolling composite sentiment with bullish and bearish threshold overlays.
         </p>
-        <div className="mt-4 h-72">
-          <Line data={scoreChartData} options={sharedOptions} />
+        <div className="relative mt-4 h-72 min-h-72">
+          {chartPoints.length > 0 ? (
+            <Line
+              ref={scoreChartRef}
+              data={scoreChartData}
+              options={sharedOptions}
+              updateMode="resize"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-lg border border-slate-100 bg-slate-50/80 text-xs text-slate-500">
+              Trend data is temporarily unavailable. Widgets will recover on the next refresh.
+            </div>
+          )}
         </div>
       </article>
 
@@ -164,21 +268,29 @@ export function TrendWidgets({ points }: TrendWidgetsProps) {
         <p className="mt-1 text-xs text-slate-500">
           Model confidence over time based on score strength and factor coverage.
         </p>
-        <div className="mt-4 h-72">
-          <Line
-            data={confidenceChartData}
-            options={{
-              ...sharedOptions,
-              scales: {
-                ...sharedOptions.scales,
-                y: {
-                  ...sharedOptions.scales?.["y"],
-                  min: 0,
-                  max: 100,
+        <div className="relative mt-4 h-72 min-h-72">
+          {chartPoints.length > 0 ? (
+            <Line
+              ref={confidenceChartRef}
+              data={confidenceChartData}
+              options={{
+                ...sharedOptions,
+                scales: {
+                  ...sharedOptions.scales,
+                  y: {
+                    ...sharedOptions.scales?.["y"],
+                    min: 0,
+                    max: 100,
+                  },
                 },
-              },
-            }}
-          />
+              }}
+              updateMode="resize"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-lg border border-slate-100 bg-slate-50/80 text-xs text-slate-500">
+              Confidence data is temporarily unavailable. Widgets will recover on the next refresh.
+            </div>
+          )}
         </div>
       </article>
     </section>
