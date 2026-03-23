@@ -112,10 +112,10 @@
 
 ## Feature 17: Testing
 
-- [ ] Add unit tests for adapters and scoring logic
-- [ ] Add contract tests for API response schemas
-- [ ] Add integration tests for dashboard overview API
-- [ ] Add Playwright smoke tests for key dashboard pages
+- [x] Add unit tests for adapters and scoring logic
+- [x] Add contract tests for API response schemas
+- [x] Add integration tests for dashboard overview API
+- [x] Add Playwright smoke tests for key dashboard pages
 
 ## Feature 18: Observability and Reliability
 

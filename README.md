@@ -13,6 +13,7 @@ API-first crypto analytics platform that combines:
 - Feature 09 is implemented in `defi-analytica/src/server/services/feature-engineering/service.ts` with time alignment, imputation, rolling z-score normalization, and per-timestamp factor contribution output.
 - Feature 10 is implemented in `defi-analytica/src/server/services/sentiment-scoring/service.ts` with weighted composite scoring, bullish/neutral/bearish labeling, confidence scoring, and validated configurable weights from `defi-analytica/src/server/services/sentiment-scoring/weights.json`.
 - Feature 11 is implemented with `/api/v1/dashboard/overview`, `/api/v1/sentiment/score`, and `/api/v1/sentiment/history`, backed by `defi-analytica/src/server/services/dashboard/service.ts` with provider-status metadata and freshness handling.
+- Feature 17 is implemented with adapter unit tests, API contract tests, dashboard overview route integration tests, and Playwright smoke tests for the primary dashboard pages.
 - Product requirements are documented in `requirements.md`.
 - Feature-by-feature implementation plan is tracked in `TODO.md`.
 
@@ -115,6 +116,28 @@ EXECUTION_ID=$(curl -s -X POST "http://localhost:3000/api/v1/dune/queries/$QUERY
 curl -s "http://localhost:3000/api/v1/dune/executions/$EXECUTION_ID/status" | jq
 curl -s "http://localhost:3000/api/v1/dune/executions/$EXECUTION_ID/results?limit=100" | jq
 ```
+
+## Testing
+
+From `defi-analytica/`:
+
+```bash
+npm test
+```
+
+For browser smoke tests, install Chromium once:
+
+```bash
+npx playwright install --with-deps chromium
+```
+
+Then run:
+
+```bash
+npm run test:e2e
+```
+
+The Playwright suite exercises `/dashboard`, `/dashboard/sentiment`, and `/dashboard/flows` using demo-mode query params to avoid flaky dependence on live upstream providers.
 
 ## Roadmap
 

@@ -46,7 +46,8 @@ Security baseline: Next.js is pinned at `16.1.7` (patched for current upstream a
 - `npm run dev` - start local dev server
 - `npm run build` - production build
 - `npm run start` - run built app
-- `npm test` - run unit tests with the Node.js test runner (`tsx --test`)
+- `npm test` - run unit, contract, and route integration tests with the Node.js test runner
+- `npm run test:e2e` - run Playwright smoke tests for key dashboard pages
 - `npm run lint` - ESLint with zero warnings allowed
 - `npm run lint:fix` - auto-fix lint issues
 - `npm run format` - format repository files
@@ -198,6 +199,35 @@ The workflow installs dependencies in `defi-analytica/` and runs:
 ```bash
 npm run refresh:data
 ```
+
+## Testing (Feature 17)
+
+Feature 17 is implemented with four layers of coverage:
+
+- adapter unit tests for Dune, DefiLlama, CoinGecko, Alternative.me, and exchange normalization logic
+- contract tests for shared API success and error envelope schemas
+- route integration coverage for `/api/v1/dashboard/overview`
+- Playwright smoke coverage for `/dashboard`, `/dashboard/sentiment`, and `/dashboard/flows`
+
+Run the Node-based test suite:
+
+```bash
+npm test
+```
+
+Install the Chromium browser once for Playwright on a fresh machine:
+
+```bash
+npx playwright install --with-deps chromium
+```
+
+Run smoke tests against a production build started automatically by Playwright:
+
+```bash
+npm run test:e2e
+```
+
+The smoke tests use `?mode=demo` on dashboard pages so they do not depend on live provider availability.
 
 ## Implemented API Endpoints
 
