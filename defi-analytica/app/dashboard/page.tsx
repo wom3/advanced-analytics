@@ -173,7 +173,7 @@ export default async function DashboardPage() {
           }))}
         />
 
-        <MarketStateScene
+        {/* <MarketStateScene
           state={overview.score.label}
           score={overview.score.score}
           confidence={overview.score.confidence}
@@ -203,7 +203,7 @@ export default async function DashboardPage() {
                 : { price: overview.market.latestPrice })}
             />
           </div>
-        </section>
+        </section> */}
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
           <div className="flex items-center justify-between gap-3">
