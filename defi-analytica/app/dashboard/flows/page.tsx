@@ -14,6 +14,7 @@ export const metadata = {
 
 const DEFAULT_CHAIN = "Ethereum";
 const DEFAULT_INTERVAL = "1d";
+const DEMO_POINTS = 30;
 
 const CHAIN_OPTIONS = [
   "Ethereum",
@@ -30,6 +31,7 @@ function isSupportedChain(value: string): value is (typeof CHAIN_OPTIONS)[number
 }
 
 type SearchParams = Record<string, string | string[] | undefined>;
+type FlowMode = "live" | "demo";
 
 function firstValue(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) {
@@ -41,6 +43,17 @@ function firstValue(value: string | string[] | undefined): string | undefined {
 function normalizeFilter(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function resolveMode(searchParams: SearchParams | undefined): FlowMode {
+  const requestedMode = normalizeFilter(firstValue(searchParams?.["mode"]))?.toLowerCase();
+  if (requestedMode === "demo") {
+    return "demo";
+  }
+  if (requestedMode === "live") {
+    return "live";
+  }
+  return process.env.NODE_ENV === "test" ? "demo" : "live";
 }
 
 function resolveFilters(searchParams: SearchParams | undefined): {
@@ -57,12 +70,55 @@ function resolveFilters(searchParams: SearchParams | undefined): {
   };
 }
 
-async function loadFlowSeries(filters: { chain: string; protocol?: string }): Promise<{
+function buildDemoSeries(
+  metric: "volume" | "tvl",
+  chain: string,
+  protocol?: string
+): LlamaNormalizedSeries {
+  const nowSec = Math.floor(Date.now() / 1_000);
+  const intervalSec = 86_400;
+
+  const points = Array.from({ length: DEMO_POINTS }, (_, index) => {
+    const timestampSec = nowSec - (DEMO_POINTS - index - 1) * intervalSec;
+    const timestamp = new Date(timestampSec * 1_000).toISOString();
+    const base = metric === "volume" ? 1_250_000 : 8_500_000;
+    const drift = metric === "volume" ? index * 25_000 : index * 55_000;
+    const wave =
+      Math.sin(index / (metric === "volume" ? 3 : 4)) * (metric === "volume" ? 90_000 : 180_000);
+
+    return {
+      timestamp,
+      value: Number((base + drift + wave).toFixed(2)),
+    };
+  });
+
+  return {
+    metric,
+    chain,
+    protocol: protocol ?? null,
+    interval: DEFAULT_INTERVAL,
+    points,
+  };
+}
+
+async function loadFlowSeries(
+  filters: { chain: string; protocol?: string },
+  mode: FlowMode
+): Promise<{
   volume: LlamaNormalizedSeries;
   tvl: LlamaNormalizedSeries;
   chain: string;
   protocol: string | undefined;
 }> {
+  if (mode === "demo") {
+    return {
+      volume: buildDemoSeries("volume", filters.chain, filters.protocol),
+      tvl: buildDemoSeries("tvl", filters.chain, filters.protocol),
+      chain: filters.chain,
+      protocol: filters.protocol,
+    };
+  }
+
   const params = new URLSearchParams({
     chain: filters.chain,
     interval: DEFAULT_INTERVAL,
@@ -108,10 +164,11 @@ type DashboardFlowsPageProps = {
 export default async function DashboardFlowsPage({ searchParams }: DashboardFlowsPageProps) {
   const resolvedSearchParams = await searchParams;
   const filters = resolveFilters(resolvedSearchParams);
+  const mode = resolveMode(resolvedSearchParams);
   const loadFilters = filters.protocol
     ? { chain: filters.chain, protocol: filters.protocol }
     : { chain: filters.chain };
-  const { volume, tvl, chain, protocol } = await loadFlowSeries(loadFilters);
+  const { volume, tvl, chain, protocol } = await loadFlowSeries(loadFilters, mode);
 
   return (
     <main

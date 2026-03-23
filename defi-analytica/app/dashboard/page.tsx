@@ -2,12 +2,12 @@ import Link from "next/link";
 import { headers } from "next/headers";
 
 import type { ApiSuccess } from "@/src/server/api/envelope";
-import type { DashboardOverviewResult } from "@/src/server/services/dashboard/service";
+import type {
+  DashboardOverviewResult,
+  SentimentBuildMode,
+} from "@/src/server/services/dashboard/service";
 
 import { LiveStatus } from "./live-status";
-import { CryptoCoinScene } from "./crypto-coin-scene";
-import { CryptoDynamicsScene } from "./crypto-dynamics-scene";
-import { MarketStateScene } from "./market-state-scene";
 import { TrendWidgets } from "./trend-widgets";
 
 function formatNumber(value: number | null, digits = 2): string {
@@ -52,9 +52,33 @@ export const metadata = {
   description: "KPI dashboard for sentiment-aware crypto analytics.",
 };
 
-async function loadOverview(): Promise<DashboardOverviewResult> {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+type DashboardPageProps = {
+  searchParams?: SearchParams | Promise<SearchParams>;
+};
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+function resolveMode(searchParams: SearchParams | undefined): SentimentBuildMode {
+  const requestedMode = firstValue(searchParams?.["mode"])?.trim().toLowerCase();
+  if (requestedMode === "demo") {
+    return "demo";
+  }
+  if (requestedMode === "live") {
+    return "live";
+  }
+  return process.env.NODE_ENV === "test" ? "demo" : "live";
+}
+
+async function loadOverview(mode: SentimentBuildMode): Promise<DashboardOverviewResult> {
   const params = new URLSearchParams({
-    mode: "live",
+    mode,
     asset: "bitcoin",
     chain: "Ethereum",
     interval: "1h",
@@ -81,8 +105,9 @@ async function loadOverview(): Promise<DashboardOverviewResult> {
   return envelope.data;
 }
 
-export default async function DashboardPage() {
-  const overview = await loadOverview();
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const overview = await loadOverview(resolveMode(resolvedSearchParams));
 
   const uptimeProviders = overview.providerStatus.filter((provider) => provider.ok).length;
   const uptimePct = Math.round((uptimeProviders / overview.providerStatus.length) * 100);
