@@ -209,6 +209,7 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
             <p className="text-xs text-slate-500">Filters are applied via URL query params.</p>
           </div>
           <form action="/dashboard/flows" method="get" className="mt-4 grid gap-3 md:grid-cols-4">
+            <input type="hidden" name="mode" value={mode} />
             <label className="flex flex-col gap-1 md:col-span-1">
               <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
                 Chain
@@ -247,7 +248,7 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
                 Apply
               </button>
               <Link
-                href="/dashboard/flows"
+                href={`/dashboard/flows?mode=${mode}`}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
               >
                 Reset
@@ -287,7 +288,7 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
         <footer className="mt-8 text-sm text-slate-600">
           Feature 14 tasks 1-4 complete: route scaffold, charts, controls, and exports.
           <Link
-            href="/dashboard"
+            href={`/dashboard?mode=${mode}`}
             className="ml-2 font-medium text-slate-900 underline decoration-slate-300 underline-offset-4"
           >
             Back to dashboard

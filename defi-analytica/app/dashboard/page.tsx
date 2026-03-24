@@ -107,7 +107,8 @@ async function loadOverview(mode: SentimentBuildMode): Promise<DashboardOverview
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const resolvedSearchParams = await searchParams;
-  const overview = await loadOverview(resolveMode(resolvedSearchParams));
+  const mode = resolveMode(resolvedSearchParams);
+  const overview = await loadOverview(mode);
 
   const uptimeProviders = overview.providerStatus.filter((provider) => provider.ok).length;
   const uptimePct = Math.round((uptimeProviders / overview.providerStatus.length) * 100);
@@ -156,7 +157,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <Link
-              href="/dashboard/sentiment#confidence-trend-chart"
+              href={`/dashboard/sentiment?mode=${mode}#confidence-trend-chart`}
               className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
             >
               Confidence
@@ -234,7 +235,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-900">Sentiment State Panel</h2>
             <Link
-              href="/dashboard/sentiment"
+              href={`/dashboard/sentiment?mode=${mode}`}
               className="text-xs font-medium text-sky-700 underline decoration-sky-300 underline-offset-4"
             >
               Open deep dive
@@ -247,7 +248,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <article className="rounded-xl border border-slate-200 bg-white p-4">
               <Link
-                href="/dashboard/sentiment#regime-history-timeline"
+                href={`/dashboard/sentiment?mode=${mode}#regime-history-timeline`}
                 className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
               >
                 Regime State
@@ -267,7 +268,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
             <article className="rounded-xl border border-slate-200 bg-white p-4">
               <Link
-                href="/dashboard/sentiment#confidence-trend-chart"
+                href={`/dashboard/sentiment?mode=${mode}#confidence-trend-chart`}
                 className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
               >
                 Confidence Band
@@ -303,7 +304,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
             <article className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
               <Link
-                href="/dashboard/sentiment#factor-contribution-charts"
+                href={`/dashboard/sentiment?mode=${mode}#factor-contribution-charts`}
                 className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 underline decoration-emerald-300 underline-offset-4"
               >
                 Top Positive Contributors
@@ -329,7 +330,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
             <article className="rounded-xl border border-rose-200 bg-rose-50/60 p-4">
               <Link
-                href="/dashboard/sentiment#factor-contribution-charts"
+                href={`/dashboard/sentiment?mode=${mode}#factor-contribution-charts`}
                 className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 underline decoration-rose-300 underline-offset-4"
               >
                 Top Negative Contributors
