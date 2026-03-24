@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 
-import type { ApiSuccess } from "@/src/server/api/envelope";
-import type { LlamaNormalizedSeries } from "@/src/server/adapters/defillama/client";
+import {
+  getLlamaMetricSeries,
+  type LlamaNormalizedSeries,
+} from "@/src/server/adapters/defillama/client";
 
 import { FlowCharts } from "./flow-charts";
 import { FlowExportActions } from "./flow-export-actions";
@@ -119,39 +120,22 @@ async function loadFlowSeries(
     };
   }
 
-  const params = new URLSearchParams({
-    chain: filters.chain,
-    interval: DEFAULT_INTERVAL,
-  });
-  if (filters.protocol) {
-    params.set("protocol", filters.protocol);
-  }
-
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  if (!host) {
-    throw new Error("Missing host header for dashboard flows requests.");
-  }
-
-  const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
-  const volumeUrl = `${proto}://${host}/api/v1/llama/metrics/volume?${params.toString()}`;
-  const tvlUrl = `${proto}://${host}/api/v1/llama/metrics/tvl?${params.toString()}`;
-
-  const [volumeRes, tvlRes] = await Promise.all([
-    fetch(volumeUrl, { cache: "no-store" }),
-    fetch(tvlUrl, { cache: "no-store" }),
+  const [volume, tvl] = await Promise.all([
+    getLlamaMetricSeries("volume", {
+      chain: filters.chain,
+      interval: DEFAULT_INTERVAL,
+      ...(filters.protocol ? { protocol: filters.protocol } : {}),
+    }),
+    getLlamaMetricSeries("tvl", {
+      chain: filters.chain,
+      interval: DEFAULT_INTERVAL,
+      ...(filters.protocol ? { protocol: filters.protocol } : {}),
+    }),
   ]);
 
-  if (!volumeRes.ok || !tvlRes.ok) {
-    throw new Error("Failed to load flows chart data.");
-  }
-
-  const volumeEnvelope = (await volumeRes.json()) as ApiSuccess<LlamaNormalizedSeries>;
-  const tvlEnvelope = (await tvlRes.json()) as ApiSuccess<LlamaNormalizedSeries>;
-
   return {
-    volume: volumeEnvelope.data,
-    tvl: tvlEnvelope.data,
+    volume,
+    tvl,
     chain: filters.chain,
     protocol: filters.protocol,
   };

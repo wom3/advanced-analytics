@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 
-import type { ApiSuccess } from "@/src/server/api/envelope";
+import {
+  buildDashboardOverview,
+  type DashboardOverviewResult,
+  type SentimentBuildMode,
+} from "@/src/server/services/dashboard/service";
 import type {
   SentimentHistoryPoint,
   SentimentScoreResult,
 } from "@/src/server/services/sentiment-scoring/service";
-import type { SentimentBuildMode } from "@/src/server/services/dashboard/service";
 
 import { FactorContributionCharts } from "./factor-contribution-charts";
 import { ConfidenceTrendChart } from "./confidence-trend-chart";
@@ -76,36 +78,17 @@ async function loadSentimentData(mode: SentimentBuildMode): Promise<{
   score: SentimentScoreResult;
   history: SentimentHistoryPoint[];
 }> {
-  const params = new URLSearchParams({
-    ...SENTIMENT_PARAMS,
+  const overview: DashboardOverviewResult = await buildDashboardOverview({
     mode,
+    asset: SENTIMENT_PARAMS.asset,
+    chain: SENTIMENT_PARAMS.chain,
+    interval: SENTIMENT_PARAMS.interval,
+    points: Number(SENTIMENT_PARAMS.points),
   });
 
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  if (!host) {
-    throw new Error("Missing host header for dashboard sentiment request.");
-  }
-
-  const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
-  const scoreUrl = `${proto}://${host}/api/v1/sentiment/score?${params.toString()}`;
-  const historyUrl = `${proto}://${host}/api/v1/sentiment/history?${params.toString()}`;
-
-  const [scoreRes, historyRes] = await Promise.all([
-    fetch(scoreUrl, { cache: "no-store" }),
-    fetch(historyUrl, { cache: "no-store" }),
-  ]);
-
-  if (!scoreRes.ok || !historyRes.ok) {
-    throw new Error("Failed to load sentiment deep dive data.");
-  }
-
-  const scoreEnvelope = (await scoreRes.json()) as ApiSuccess<SentimentScoreResult>;
-  const historyEnvelope = (await historyRes.json()) as ApiSuccess<SentimentHistoryPoint[]>;
-
   return {
-    score: scoreEnvelope.data,
-    history: historyEnvelope.data,
+    score: overview.score,
+    history: overview.history,
   };
 }
 
