@@ -2,12 +2,12 @@ import Link from "next/link";
 import { headers } from "next/headers";
 
 import type { ApiSuccess } from "@/src/server/api/envelope";
-import type { DashboardOverviewResult } from "@/src/server/services/dashboard/service";
+import type {
+  DashboardOverviewResult,
+  SentimentBuildMode,
+} from "@/src/server/services/dashboard/service";
 
 import { LiveStatus } from "./live-status";
-import { CryptoCoinScene } from "./crypto-coin-scene";
-import { CryptoDynamicsScene } from "./crypto-dynamics-scene";
-import { MarketStateScene } from "./market-state-scene";
 import { TrendWidgets } from "./trend-widgets";
 
 function formatNumber(value: number | null, digits = 2): string {
@@ -52,9 +52,33 @@ export const metadata = {
   description: "KPI dashboard for sentiment-aware crypto analytics.",
 };
 
-async function loadOverview(): Promise<DashboardOverviewResult> {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+type DashboardPageProps = {
+  searchParams?: SearchParams | Promise<SearchParams>;
+};
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+function resolveMode(searchParams: SearchParams | undefined): SentimentBuildMode {
+  const requestedMode = firstValue(searchParams?.["mode"])?.trim().toLowerCase();
+  if (requestedMode === "demo") {
+    return "demo";
+  }
+  if (requestedMode === "live") {
+    return "live";
+  }
+  return process.env.NODE_ENV === "test" ? "demo" : "live";
+}
+
+async function loadOverview(mode: SentimentBuildMode): Promise<DashboardOverviewResult> {
   const params = new URLSearchParams({
-    mode: "live",
+    mode,
     asset: "bitcoin",
     chain: "Ethereum",
     interval: "1h",
@@ -81,8 +105,10 @@ async function loadOverview(): Promise<DashboardOverviewResult> {
   return envelope.data;
 }
 
-export default async function DashboardPage() {
-  const overview = await loadOverview();
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const mode = resolveMode(resolvedSearchParams);
+  const overview = await loadOverview(mode);
 
   const uptimeProviders = overview.providerStatus.filter((provider) => provider.ok).length;
   const uptimePct = Math.round((uptimeProviders / overview.providerStatus.length) * 100);
@@ -131,7 +157,7 @@ export default async function DashboardPage() {
 
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <Link
-              href="/dashboard/sentiment#confidence-trend-chart"
+              href={`/dashboard/sentiment?mode=${mode}#confidence-trend-chart`}
               className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
             >
               Confidence
@@ -209,7 +235,7 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-900">Sentiment State Panel</h2>
             <Link
-              href="/dashboard/sentiment"
+              href={`/dashboard/sentiment?mode=${mode}`}
               className="text-xs font-medium text-sky-700 underline decoration-sky-300 underline-offset-4"
             >
               Open deep dive
@@ -222,7 +248,7 @@ export default async function DashboardPage() {
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <article className="rounded-xl border border-slate-200 bg-white p-4">
               <Link
-                href="/dashboard/sentiment#regime-history-timeline"
+                href={`/dashboard/sentiment?mode=${mode}#regime-history-timeline`}
                 className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
               >
                 Regime State
@@ -242,7 +268,7 @@ export default async function DashboardPage() {
 
             <article className="rounded-xl border border-slate-200 bg-white p-4">
               <Link
-                href="/dashboard/sentiment#confidence-trend-chart"
+                href={`/dashboard/sentiment?mode=${mode}#confidence-trend-chart`}
                 className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 underline decoration-slate-300 underline-offset-4"
               >
                 Confidence Band
@@ -278,7 +304,7 @@ export default async function DashboardPage() {
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
             <article className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
               <Link
-                href="/dashboard/sentiment#factor-contribution-charts"
+                href={`/dashboard/sentiment?mode=${mode}#factor-contribution-charts`}
                 className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 underline decoration-emerald-300 underline-offset-4"
               >
                 Top Positive Contributors
@@ -304,7 +330,7 @@ export default async function DashboardPage() {
 
             <article className="rounded-xl border border-rose-200 bg-rose-50/60 p-4">
               <Link
-                href="/dashboard/sentiment#factor-contribution-charts"
+                href={`/dashboard/sentiment?mode=${mode}#factor-contribution-charts`}
                 className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 underline decoration-rose-300 underline-offset-4"
               >
                 Top Negative Contributors

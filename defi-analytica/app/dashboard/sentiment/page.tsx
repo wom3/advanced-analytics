@@ -6,18 +6,42 @@ import type {
   SentimentHistoryPoint,
   SentimentScoreResult,
 } from "@/src/server/services/sentiment-scoring/service";
+import type { SentimentBuildMode } from "@/src/server/services/dashboard/service";
 
 import { FactorContributionCharts } from "./factor-contribution-charts";
 import { ConfidenceTrendChart } from "./confidence-trend-chart";
 import { RegimeHistoryTimelineChart } from "./regime-history-timeline-chart";
 
 const SENTIMENT_PARAMS = {
-  mode: "live",
   asset: "bitcoin",
   chain: "Ethereum",
   interval: "1h",
   points: "168",
 };
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+type DashboardSentimentPageProps = {
+  searchParams?: SearchParams | Promise<SearchParams>;
+};
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+function resolveMode(searchParams: SearchParams | undefined): SentimentBuildMode {
+  const requestedMode = firstValue(searchParams?.["mode"])?.trim().toLowerCase();
+  if (requestedMode === "demo") {
+    return "demo";
+  }
+  if (requestedMode === "live") {
+    return "live";
+  }
+  return process.env.NODE_ENV === "test" ? "demo" : "live";
+}
 
 function formatNumber(value: number | null, digits = 2): string {
   if (value === null || !Number.isFinite(value)) {
@@ -48,11 +72,14 @@ function cardTone(label: "bullish" | "neutral" | "bearish"): string {
   return "text-amber-700 border-amber-300 bg-amber-50";
 }
 
-async function loadSentimentData(): Promise<{
+async function loadSentimentData(mode: SentimentBuildMode): Promise<{
   score: SentimentScoreResult;
   history: SentimentHistoryPoint[];
 }> {
-  const params = new URLSearchParams(SENTIMENT_PARAMS);
+  const params = new URLSearchParams({
+    ...SENTIMENT_PARAMS,
+    mode,
+  });
 
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
@@ -87,8 +114,12 @@ export const metadata = {
   description: "Sentiment deep-dive page for score context and recent regime observations.",
 };
 
-export default async function DashboardSentimentPage() {
-  const { score, history } = await loadSentimentData();
+export default async function DashboardSentimentPage({
+  searchParams,
+}: DashboardSentimentPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const mode = resolveMode(resolvedSearchParams);
+  const { score, history } = await loadSentimentData(mode);
   const latestHistory = history.slice(-10).reverse();
 
   return (
@@ -208,7 +239,7 @@ export default async function DashboardSentimentPage() {
           Feature 13 tasks 1-4 complete: sentiment deep-dive, factor charts, regime timeline, and
           confidence trend.
           <Link
-            href="/dashboard"
+            href={`/dashboard?mode=${mode}`}
             className="ml-2 font-medium text-slate-900 underline decoration-slate-300 underline-offset-4"
           >
             Back to dashboard
