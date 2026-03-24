@@ -118,7 +118,8 @@ export default async function DashboardSentimentPage({
   searchParams,
 }: DashboardSentimentPageProps) {
   const resolvedSearchParams = await searchParams;
-  const { score, history } = await loadSentimentData(resolveMode(resolvedSearchParams));
+  const mode = resolveMode(resolvedSearchParams);
+  const { score, history } = await loadSentimentData(mode);
   const latestHistory = history.slice(-10).reverse();
 
   return (
@@ -238,7 +239,7 @@ export default async function DashboardSentimentPage({
           Feature 13 tasks 1-4 complete: sentiment deep-dive, factor charts, regime timeline, and
           confidence trend.
           <Link
-            href="/dashboard"
+            href={`/dashboard?mode=${mode}`}
             className="ml-2 font-medium text-slate-900 underline decoration-slate-300 underline-offset-4"
           >
             Back to dashboard
