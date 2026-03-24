@@ -27,8 +27,23 @@ const CHAIN_OPTIONS = [
   "Avalanche",
 ] as const;
 
+const PROTOCOL_OPTIONS = [
+  { label: "Uniswap", value: "uniswap" },
+  { label: "SushiSwap", value: "sushiswap" },
+  { label: "Curve DEX", value: "curve-dex" },
+  { label: "Balancer V1", value: "balancer-v1" },
+] as const;
+
 function isSupportedChain(value: string): value is (typeof CHAIN_OPTIONS)[number] {
   return CHAIN_OPTIONS.includes(value as (typeof CHAIN_OPTIONS)[number]);
+}
+
+function resolveProtocolLabel(protocol: string | undefined): string | undefined {
+  if (!protocol) {
+    return undefined;
+  }
+
+  return PROTOCOL_OPTIONS.find((option) => option.value === protocol)?.label ?? protocol;
 }
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -153,6 +168,7 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
     ? { chain: filters.chain, protocol: filters.protocol }
     : { chain: filters.chain };
   const { volume, tvl, chain, protocol } = await loadFlowSeries(loadFilters, mode);
+  const protocolLabel = resolveProtocolLabel(protocol);
 
   return (
     <main
@@ -215,13 +231,18 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
               <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
                 Protocol (optional)
               </span>
-              <input
+              <select
                 name="protocol"
-                type="text"
                 defaultValue={protocol ?? ""}
-                placeholder="uniswap"
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition placeholder:text-slate-400 focus:ring-2"
-              />
+              >
+                <option value="">All protocols</option>
+                {PROTOCOL_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <div className="flex items-end gap-2 md:col-span-1">
@@ -244,7 +265,7 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
             {protocol ? (
               <>
                 {" · Protocol: "}
-                <span className="font-medium text-slate-700">{protocol}</span>
+                <span className="font-medium text-slate-700">{protocolLabel}</span>
               </>
             ) : (
               <>{" · Protocol: all"}</>
@@ -256,7 +277,7 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
 
         <FlowExportActions
           chain={chain}
-          protocol={protocol}
+          protocol={protocolLabel ?? protocol}
           volumePoints={volume.points}
           tvlPoints={tvl.points}
         />
