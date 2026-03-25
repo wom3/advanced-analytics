@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
       status: "ok",
       endpoints: [
         "/api/v1",
+        "/api/v1/llama/catalog",
         "/api/v1/llama/metrics/:metric",
         "/api/v1/coingecko/market/:asset",
         "/api/v1/fng/latest",

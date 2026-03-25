@@ -1,6 +1,7 @@
 const DEFAULT_BASE_URL = "http://localhost:3000";
 
 const REFRESH_TARGETS = [
+  { name: "llama-catalog", path: "/api/v1/llama/catalog?chain=Ethereum" },
   { name: "fng-latest", path: "/api/v1/fng/latest" },
   { name: "fng-history", path: "/api/v1/fng/history?limit=30" },
   { name: "llama-tvl", path: "/api/v1/llama/metrics/tvl?chain=Ethereum&interval=1d" },
