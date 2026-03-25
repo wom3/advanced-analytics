@@ -40,12 +40,19 @@
 - Install deps: `npm i`
 - Start local infra: `npm run infra:up`
 - Dev server: `npm run dev`
+- Unit tests: `npm test`
 - Lint (enforced zero warnings): `npm run lint`
 - Build production bundle: `npm run build`
 - Format/check: `npm run format` / `npm run format:check`
 - Stop local infra: `npm run infra:down`
 - Tail local infra logs: `npm run infra:logs`
 - Environment template: `defi-analytica/.env.example` (`DUNE_API_KEY` needed for Dune-backed endpoints; persistence/cache use `DATABASE_URL` and `REDIS_URL`; optional exchange route gated by `ENABLE_EXCHANGE_SIGNALS`).
+
+## Testing Conventions
+
+- Tests use `node:test` with `node:assert/strict`, executed through `npm test` (`tsx --test`).
+- Prefer small deterministic service and utility tests over broad integration scaffolding unless the task needs end-to-end coverage.
+- Match the existing `*.test.ts` style in `defi-analytica/src/server/services/**`: concise setup, direct assertions, and minimal abstraction.
 
 ## Project-Specific Coding Rules
 
