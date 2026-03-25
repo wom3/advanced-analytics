@@ -205,8 +205,9 @@ npm run refresh:data
 Feature 17 is implemented with four layers of coverage:
 
 - adapter unit tests for Dune, DefiLlama, CoinGecko, Alternative.me, and exchange normalization logic
-- contract tests for shared API success and error envelope schemas
+- contract tests for shared API success and error envelope schemas, including invalid shared query parameter handling
 - route integration coverage for `/api/v1/dashboard/overview`
+- deterministic parser tests for shared dashboard and sentiment query validation
 - Playwright smoke coverage for `/dashboard`, `/dashboard/sentiment`, and `/dashboard/flows`
 
 Run the Node-based test suite:
@@ -214,6 +215,8 @@ Run the Node-based test suite:
 ```bash
 npm test
 ```
+
+The shared test bootstrap in `src/test/env-setup.ts` forces `NODE_ENV=test` and a deterministic `DUNE_API_KEY` so local placeholder secrets do not affect unit and contract tests.
 
 Install the Chromium browser once for Playwright on a fresh machine:
 
@@ -249,6 +252,7 @@ Base: `/api/v1`
 
 ## Implemented Frontend Pages
 
+- `GET /` - landing page with links into the dashboard surfaces and API root
 - `GET /dashboard` - KPI cards, trend widgets, sentiment state panel, and auto-refresh freshness warnings (Feature 12)
 - `GET /dashboard/sentiment` - Sentiment deep-dive page with score context, factor contribution charts, regime history timeline chart, confidence trend chart, and recent observation table (Feature 13 tasks 1-4)
 
@@ -372,6 +376,8 @@ curl -s "http://localhost:3000/api/v1/sentiment/history?mode=demo&interval=1h&po
 curl -s "http://localhost:3000/api/v1/dashboard/overview?mode=demo&interval=1h&points=72&asset=bitcoin&chain=Ethereum" | jq
 ```
 
+These routes validate `mode`, `interval`, `points`, `asset`, and `chain` before calling shared services and return `400` for invalid query input.
+
 Live-mode checks (uses upstream providers with fallback-to-synthetic if unavailable):
 
 ```bash
@@ -423,7 +429,8 @@ Error envelope:
 - Sentiment factor weights and thresholds are configured in `src/server/services/sentiment-scoring/weights.json` and validated with Zod at load time.
 - Dashboard aggregation logic for blending provider factors, emitting provider-status metadata, and serving sentiment/dashboard payloads lives in `src/server/services/dashboard/service.ts`.
 - Shared API helpers:
-  - `src/server/api/envelope.ts` for success/error JSON contracts
+  - `src/server/api/envelope.ts` for success/error JSON contracts and shared response headers
+  - `src/server/api/dashboard-query.ts` for shared dashboard/sentiment query parsing
   - `src/server/api/rate-limit.ts` for in-memory per-IP+path limiting
   - `src/server/observability/logger.ts` for structured API logs
 
