@@ -1,4 +1,5 @@
 export type CacheGroup =
+  | "llama.catalog"
   | "llama.metrics"
   | "coingecko.market"
   | "fng.latest"
@@ -8,6 +9,7 @@ export type CacheGroup =
   | "dashboard.overview";
 
 export const CACHE_TTL_SECONDS: Record<CacheGroup, number> = {
+  "llama.catalog": 3_600,
   "llama.metrics": 120,
   "coingecko.market": 120,
   "fng.latest": 60,
@@ -18,8 +20,10 @@ export const CACHE_TTL_SECONDS: Record<CacheGroup, number> = {
 };
 
 export const HTTP_CACHE_KEY_PREFIX = "aa:v1:http";
+export const CATALOG_CACHE_KEY_PREFIX = "aa:v1:catalog";
 
 export const CACHE_GROUP_PREFIXES: Record<CacheGroup, string[]> = {
+  "llama.catalog": [`${CATALOG_CACHE_KEY_PREFIX}:defillama:dex-filters:`],
   "llama.metrics": [`${HTTP_CACHE_KEY_PREFIX}:/api/v1/llama/metrics/`],
   "coingecko.market": [`${HTTP_CACHE_KEY_PREFIX}:/api/v1/coingecko/market/`],
   "fng.latest": [`${HTTP_CACHE_KEY_PREFIX}:/api/v1/fng/latest`],

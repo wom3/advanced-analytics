@@ -1,4 +1,5 @@
 const LLAMA_BASE_URL = "https://api.llama.fi";
+const LLAMA_DEFAULT_DEX_CHAIN = "Ethereum";
 
 export type LlamaMetric = "tvl" | "volume" | "fees" | "perps";
 
@@ -15,6 +16,19 @@ export type LlamaNormalizedSeries = {
   points: LlamaTimeSeriesPoint[];
 };
 
+export type LlamaDexProtocolOption = {
+  name: string;
+  slug: string;
+  category: string | null;
+  chains: string[];
+};
+
+export type LlamaDexFilterCatalog = {
+  activeChain: string;
+  chains: string[];
+  protocols: LlamaDexProtocolOption[];
+};
+
 type LlamaSeriesOptions = {
   chain?: string;
   protocol?: string;
@@ -25,6 +39,14 @@ type LlamaSeriesOptions = {
 
 type LlamaOverviewPayload = {
   totalDataChart?: Array<[number, number]>;
+  protocols?: Array<{
+    name?: string;
+    slug?: string;
+    category?: string;
+    chains?: string[];
+  }>;
+  allChains?: string[];
+  chain?: string;
 };
 
 type LlamaProtocolChainTvlEntry = {
@@ -300,6 +322,69 @@ async function loadOverviewSeries(
       value: Number(point[1] ?? Number.NaN),
     }))
     .filter((point) => Number.isFinite(point.timestampSec) && Number.isFinite(point.value));
+}
+
+function sortStrings(values: string[]): string[] {
+  return [...values].sort((left, right) =>
+    left.localeCompare(right, undefined, { sensitivity: "base" })
+  );
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter((value) => value.length > 0))];
+}
+
+function parseDexFilterCatalog(
+  payload: LlamaOverviewPayload,
+  requestedChain: string
+): LlamaDexFilterCatalog {
+  const chains = sortStrings(
+    uniqueStrings([...(payload.allChains ?? []), payload.chain ?? LLAMA_DEFAULT_DEX_CHAIN])
+  );
+  const activeChain = chains.includes(requestedChain)
+    ? requestedChain
+    : payload.chain ?? LLAMA_DEFAULT_DEX_CHAIN;
+
+  const protocols = (payload.protocols ?? [])
+    .map((protocol) => {
+      const name = protocol.name?.trim() ?? "";
+      const slug = protocol.slug?.trim() ?? "";
+      const protocolChains = sortStrings(uniqueStrings(protocol.chains ?? []));
+
+      if (!name || !slug || protocolChains.length === 0) {
+        return null;
+      }
+
+      if (!protocolChains.includes(activeChain)) {
+        return null;
+      }
+
+      return {
+        name,
+        slug,
+        category: protocol.category?.trim() || null,
+        chains: protocolChains,
+      } satisfies LlamaDexProtocolOption;
+    })
+    .filter((protocol): protocol is LlamaDexProtocolOption => protocol !== null)
+    .sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: "base" }));
+
+  return {
+    activeChain,
+    chains,
+    protocols,
+  };
+}
+
+export async function getLlamaDexFilterCatalog(
+  chain = LLAMA_DEFAULT_DEX_CHAIN
+): Promise<LlamaDexFilterCatalog> {
+  const requestedChain = chain.trim() || LLAMA_DEFAULT_DEX_CHAIN;
+  const payload = await llamaRequest<LlamaOverviewPayload>(
+    `/overview/dexs/${encodeURIComponent(requestedChain)}`
+  );
+
+  return parseDexFilterCatalog(payload, requestedChain);
 }
 
 export async function getLlamaMetricSeries(
