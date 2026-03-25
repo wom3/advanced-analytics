@@ -13,6 +13,9 @@ import { logApiWarn } from "@/src/server/observability/logger";
 const LLAMA_CATALOG_PROVIDER = "defillama";
 const LLAMA_CATALOG_RESOURCE = "dex-filter-catalog";
 const DEFAULT_CHAIN = "Ethereum";
+const CATALOG_SOFT_STALE_SEC = 3_600;
+const CATALOG_HARD_STALE_SEC = 21_600;
+const CATALOG_RETENTION_DAYS = 30;
 
 const catalogSchema = z.object({
   activeChain: z.string().trim().min(1),
@@ -46,6 +49,14 @@ function normalizeChain(chain: string | undefined): string {
 function catalogCacheKey(chain: string): string {
   const normalized = chain.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return `${CATALOG_CACHE_KEY_PREFIX}:defillama:dex-filters:${normalized}`;
+}
+
+function ageSec(asOf: string): number {
+  return Math.max(Math.floor((Date.now() - Date.parse(asOf)) / 1_000), 0);
+}
+
+function isStale(asOf: string, maxAgeSec: number): boolean {
+  return ageSec(asOf) > maxAgeSec;
 }
 
 async function loadCachedCatalog(chain: string): Promise<DefiLlamaCatalogResolution | null> {
@@ -90,6 +101,33 @@ async function persistCatalogSnapshot(
       requestId,
       message: error instanceof Error ? error.message : "Unknown Prisma persistence error",
       meta: { chain },
+    });
+  }
+}
+
+async function pruneCatalogSnapshots(chain: string, requestId: string): Promise<void> {
+  if (!env.DATABASE_URL) {
+    return;
+  }
+
+  try {
+    const cutoff = new Date(Date.now() - CATALOG_RETENTION_DAYS * 24 * 60 * 60 * 1_000);
+    await prisma.providerCatalogSnapshot.deleteMany({
+      where: {
+        provider: LLAMA_CATALOG_PROVIDER,
+        resource: LLAMA_CATALOG_RESOURCE,
+        scope: chain,
+        fetchedAt: {
+          lt: cutoff,
+        },
+      },
+    });
+  } catch (error) {
+    logApiWarn({
+      event: "catalog.defillama.prune_failed",
+      requestId,
+      message: error instanceof Error ? error.message : "Unknown Prisma prune error",
+      meta: { chain, retentionDays: CATALOG_RETENTION_DAYS },
     });
   }
 }
@@ -150,6 +188,17 @@ async function writeCatalogCache(record: { chain: string; asOf: string; catalog:
   );
 }
 
+function scheduleCatalogRefresh(chain: string, requestId: string): void {
+  void refreshDefiLlamaDexCatalog(chain, requestId).catch((error) => {
+    logApiWarn({
+      event: "catalog.defillama.background_refresh_failed",
+      requestId,
+      message: error instanceof Error ? error.message : "Unknown background refresh error",
+      meta: { chain },
+    });
+  });
+}
+
 export async function refreshDefiLlamaDexCatalog(
   chain: string | undefined,
   requestId = "system"
@@ -161,6 +210,7 @@ export async function refreshDefiLlamaDexCatalog(
   await Promise.all([
     writeCatalogCache({ chain: normalizedChain, asOf, catalog }),
     persistCatalogSnapshot(normalizedChain, catalog, asOf, requestId),
+    pruneCatalogSnapshots(normalizedChain, requestId),
   ]);
 
   return {
@@ -178,6 +228,18 @@ export async function getDefiLlamaDexCatalog(
 
   const cached = await loadCachedCatalog(normalizedChain);
   if (cached) {
+    if (isStale(cached.asOf, CATALOG_SOFT_STALE_SEC)) {
+      scheduleCatalogRefresh(normalizedChain, requestId);
+    }
+
+    if (isStale(cached.asOf, CATALOG_HARD_STALE_SEC)) {
+      try {
+        return await refreshDefiLlamaDexCatalog(normalizedChain, requestId);
+      } catch {
+        return cached;
+      }
+    }
+
     return cached;
   }
 
@@ -188,6 +250,19 @@ export async function getDefiLlamaDexCatalog(
       asOf: fromDatabase.asOf,
       catalog: fromDatabase.catalog,
     });
+
+    if (isStale(fromDatabase.asOf, CATALOG_SOFT_STALE_SEC)) {
+      scheduleCatalogRefresh(normalizedChain, requestId);
+    }
+
+    if (isStale(fromDatabase.asOf, CATALOG_HARD_STALE_SEC)) {
+      try {
+        return await refreshDefiLlamaDexCatalog(normalizedChain, requestId);
+      } catch {
+        return fromDatabase;
+      }
+    }
+
     return fromDatabase;
   }
 

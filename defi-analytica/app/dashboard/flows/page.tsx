@@ -2,8 +2,11 @@ import Link from "next/link";
 
 import {
   getLlamaMetricSeries,
+  type LlamaDexFilterCatalog,
+  type LlamaDexProtocolOption,
   type LlamaNormalizedSeries,
 } from "@/src/server/adapters/defillama/client";
+import { getDefiLlamaDexCatalog } from "@/src/server/services/catalog/defillama";
 
 import { FlowCharts } from "./flow-charts";
 import { FlowExportActions } from "./flow-export-actions";
@@ -17,34 +20,13 @@ const DEFAULT_CHAIN = "Ethereum";
 const DEFAULT_INTERVAL = "1d";
 const DEMO_POINTS = 30;
 
-const CHAIN_OPTIONS = [
-  "Ethereum",
-  "Solana",
-  "Arbitrum",
-  "Base",
-  "BNB",
-  "Polygon",
-  "Avalanche",
-] as const;
-
-const PROTOCOL_OPTIONS = [
-  { label: "Uniswap", value: "uniswap" },
-  { label: "SushiSwap", value: "sushiswap" },
-  { label: "Curve DEX", value: "curve-dex" },
-  { label: "Balancer V1", value: "balancer-v1" },
-] as const;
-
-function isSupportedChain(value: string): value is (typeof CHAIN_OPTIONS)[number] {
-  return CHAIN_OPTIONS.includes(value as (typeof CHAIN_OPTIONS)[number]);
-}
-
-function resolveProtocolLabel(protocol: string | undefined): string | undefined {
-  if (!protocol) {
-    return undefined;
-  }
-
-  return PROTOCOL_OPTIONS.find((option) => option.value === protocol)?.label ?? protocol;
-}
+const DEMO_CHAINS = ["Ethereum", "Solana", "Arbitrum", "Base", "BNB", "Polygon", "Avalanche"];
+const DEMO_PROTOCOLS: LlamaDexProtocolOption[] = [
+  { name: "Uniswap", slug: "uniswap", category: "Dexs", chains: ["Ethereum", "Arbitrum", "Base", "Polygon"] },
+  { name: "SushiSwap", slug: "sushiswap", category: "Dexs", chains: ["Ethereum", "Arbitrum", "Base", "Polygon", "Avalanche"] },
+  { name: "Curve DEX", slug: "curve-dex", category: "Dexs", chains: ["Ethereum", "Arbitrum", "Base", "Polygon", "Avalanche"] },
+  { name: "Balancer V1", slug: "balancer-v1", category: "Dexs", chains: ["Ethereum"] },
+];
 
 type SearchParams = Record<string, string | string[] | undefined>;
 type FlowMode = "live" | "demo";
@@ -73,17 +55,56 @@ function resolveMode(searchParams: SearchParams | undefined): FlowMode {
 }
 
 function resolveFilters(searchParams: SearchParams | undefined): {
-  chain: string;
+  chain: string | undefined;
   protocol: string | undefined;
 } {
   const selectedChain = normalizeFilter(firstValue(searchParams?.["chain"]));
   const selectedProtocol = normalizeFilter(firstValue(searchParams?.["protocol"]));
-  const chain = selectedChain && isSupportedChain(selectedChain) ? selectedChain : DEFAULT_CHAIN;
 
   return {
-    chain,
+    chain: selectedChain,
     protocol: selectedProtocol,
   };
+}
+
+function buildDemoCatalog(requestedChain: string | undefined): LlamaDexFilterCatalog {
+  const activeChain = requestedChain && DEMO_CHAINS.includes(requestedChain) ? requestedChain : DEFAULT_CHAIN;
+
+  return {
+    activeChain,
+    chains: DEMO_CHAINS,
+    protocols: DEMO_PROTOCOLS.filter((protocol) => protocol.chains.includes(activeChain)),
+  };
+}
+
+async function loadFilterCatalog(mode: FlowMode, requestedChain: string | undefined) {
+  if (mode === "demo") {
+    return buildDemoCatalog(requestedChain);
+  }
+
+  try {
+    const result = await getDefiLlamaDexCatalog(requestedChain, "dashboard-flows");
+    return result.catalog;
+  } catch {
+    return buildDemoCatalog(requestedChain);
+  }
+}
+
+function resolveSelectedProtocol(
+  requestedProtocol: string | undefined,
+  protocols: LlamaDexProtocolOption[]
+): LlamaDexProtocolOption | null {
+  if (!requestedProtocol) {
+    return null;
+  }
+
+  const normalized = requestedProtocol.trim().toLowerCase();
+  return (
+    protocols.find(
+      (protocol) =>
+        protocol.slug.toLowerCase() === normalized || protocol.name.trim().toLowerCase() === normalized
+    ) ?? null
+  );
 }
 
 function buildDemoSeries(
@@ -123,15 +144,11 @@ async function loadFlowSeries(
 ): Promise<{
   volume: LlamaNormalizedSeries;
   tvl: LlamaNormalizedSeries;
-  chain: string;
-  protocol: string | undefined;
 }> {
   if (mode === "demo") {
     return {
       volume: buildDemoSeries("volume", filters.chain, filters.protocol),
       tvl: buildDemoSeries("tvl", filters.chain, filters.protocol),
-      chain: filters.chain,
-      protocol: filters.protocol,
     };
   }
 
@@ -151,8 +168,6 @@ async function loadFlowSeries(
   return {
     volume,
     tvl,
-    chain: filters.chain,
-    protocol: filters.protocol,
   };
 }
 
@@ -164,11 +179,16 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
   const resolvedSearchParams = await searchParams;
   const filters = resolveFilters(resolvedSearchParams);
   const mode = resolveMode(resolvedSearchParams);
-  const loadFilters = filters.protocol
-    ? { chain: filters.chain, protocol: filters.protocol }
-    : { chain: filters.chain };
-  const { volume, tvl, chain, protocol } = await loadFlowSeries(loadFilters, mode);
-  const protocolLabel = resolveProtocolLabel(protocol);
+  const catalog = await loadFilterCatalog(mode, filters.chain);
+  const chain = catalog.activeChain;
+  const selectedProtocol = resolveSelectedProtocol(filters.protocol, catalog.protocols);
+  const { volume, tvl } = await loadFlowSeries(
+    {
+      chain,
+      ...(selectedProtocol ? { protocol: selectedProtocol.slug } : {}),
+    },
+    mode
+  );
 
   return (
     <main
@@ -219,7 +239,7 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
                 defaultValue={chain}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring-2"
               >
-                {CHAIN_OPTIONS.map((option) => (
+                {catalog.chains.map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -233,13 +253,13 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
               </span>
               <select
                 name="protocol"
-                defaultValue={protocol ?? ""}
+                defaultValue={selectedProtocol?.slug ?? ""}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition placeholder:text-slate-400 focus:ring-2"
               >
                 <option value="">All protocols</option>
-                {PROTOCOL_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {catalog.protocols.map((option) => (
+                  <option key={option.slug} value={option.slug}>
+                    {option.name}
                   </option>
                 ))}
               </select>
@@ -262,10 +282,10 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
           </form>
           <p className="mt-3 text-xs text-slate-500">
             Active scope: <span className="font-medium text-slate-700">{chain}</span>
-            {protocol ? (
+            {selectedProtocol ? (
               <>
                 {" · Protocol: "}
-                <span className="font-medium text-slate-700">{protocolLabel}</span>
+                <span className="font-medium text-slate-700">{selectedProtocol.name}</span>
               </>
             ) : (
               <>{" · Protocol: all"}</>
@@ -277,7 +297,7 @@ export default async function DashboardFlowsPage({ searchParams }: DashboardFlow
 
         <FlowExportActions
           chain={chain}
-          protocol={protocolLabel ?? protocol}
+          protocol={selectedProtocol?.name}
           volumePoints={volume.points}
           tvlPoints={tvl.points}
         />
