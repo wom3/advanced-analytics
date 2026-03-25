@@ -6,9 +6,11 @@ import { z } from "zod";
 import { GET as getApiRoot } from "@/app/api/v1/route";
 import { GET as getCoinGeckoMarket } from "@/app/api/v1/coingecko/market/[asset]/route";
 import { GET as getDashboardOverview } from "@/app/api/v1/dashboard/overview/route";
+import { GET as getLlamaCatalog } from "@/app/api/v1/llama/catalog/route";
 import { GET as getSentimentHistory } from "@/app/api/v1/sentiment/history/route";
 import { GET as getSentimentScore } from "@/app/api/v1/sentiment/score/route";
 import { createApiRequest } from "@/src/test/support/next";
+import { createJsonResponse, withMockedFetch } from "@/src/test/support/fetch";
 
 const apiErrorSchema = z.object({
   code: z.string().min(1),
@@ -93,6 +95,19 @@ const dashboardOverviewSchema = z.object({
   }),
 });
 
+const llamaCatalogSchema = z.object({
+  activeChain: z.string().min(1),
+  chains: z.array(z.string().min(1)).min(1),
+  protocols: z.array(
+    z.object({
+      name: z.string().min(1),
+      slug: z.string().min(1),
+      category: z.string().nullable(),
+      chains: z.array(z.string().min(1)).min(1),
+    })
+  ),
+});
+
 test("api root response matches the shared success envelope", async () => {
   const response = await getApiRoot(createApiRequest("/api/v1"));
 
@@ -149,6 +164,32 @@ test("dashboard overview response matches the documented schema", async () => {
 
   assert.equal(parsed.data.history.length, 48);
   assert.equal(parsed.meta.route, "/api/v1/dashboard/overview");
+});
+
+test("llama catalog response matches the documented schema", async () => {
+  const response = await withMockedFetch(
+    async () =>
+      createJsonResponse({
+        chain: "Ethereum",
+        allChains: ["Ethereum", "Base", "Arbitrum"],
+        protocols: [
+          {
+            name: "Curve DEX",
+            slug: "curve-dex",
+            category: "Dexs",
+            chains: ["Ethereum", "Base"],
+          },
+        ],
+      }),
+    async () => getLlamaCatalog(createApiRequest("/api/v1/llama/catalog?chain=Ethereum"))
+  );
+
+  assert.equal(response.status, 200);
+  const body = await response.json();
+
+  const parsed = apiSuccessSchema(llamaCatalogSchema).parse(body);
+
+  assert.equal(parsed.meta.route, "/api/v1/llama/catalog");
 });
 
 test("provider routes emit the shared error envelope on invalid input", async () => {

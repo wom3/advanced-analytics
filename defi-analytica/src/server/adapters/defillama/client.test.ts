@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { LlamaApiError, getLlamaMetricSeries } from "@/src/server/adapters/defillama/client";
+import {
+  LlamaApiError,
+  getLlamaDexFilterCatalog,
+  getLlamaMetricSeries,
+} from "@/src/server/adapters/defillama/client";
 import { createJsonResponse, withMockedFetch } from "@/src/test/support/fetch";
 
 test("aggregates protocol chain TVL across matching DefiLlama chain keys", async () => {
@@ -58,4 +62,52 @@ test("rejects invalid DefiLlama intervals before fetching", async () => {
       return true;
     }
   );
+});
+
+test("builds a DEX filter catalog from overview metadata", async () => {
+  const catalog = await withMockedFetch(
+    async () =>
+      createJsonResponse({
+        chain: "Ethereum",
+        allChains: ["Base", "Ethereum", "Arbitrum"],
+        protocols: [
+          {
+            name: "SushiSwap",
+            slug: "sushiswap",
+            category: "Dexs",
+            chains: ["Ethereum", "Arbitrum"],
+          },
+          {
+            name: "Curve DEX",
+            slug: "curve-dex",
+            category: "Dexs",
+            chains: ["Ethereum", "Base"],
+          },
+          {
+            name: "Jupiter",
+            slug: "jupiter",
+            category: "Dexs",
+            chains: ["Solana"],
+          },
+        ],
+      }),
+    async () => getLlamaDexFilterCatalog("Ethereum")
+  );
+
+  assert.equal(catalog.activeChain, "Ethereum");
+  assert.deepEqual(catalog.chains, ["Arbitrum", "Base", "Ethereum"]);
+  assert.deepEqual(catalog.protocols, [
+    {
+      name: "Curve DEX",
+      slug: "curve-dex",
+      category: "Dexs",
+      chains: ["Base", "Ethereum"],
+    },
+    {
+      name: "SushiSwap",
+      slug: "sushiswap",
+      category: "Dexs",
+      chains: ["Arbitrum", "Ethereum"],
+    },
+  ]);
 });

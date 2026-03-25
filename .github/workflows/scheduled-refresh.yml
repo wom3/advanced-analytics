@@ -26,6 +26,7 @@ jobs:
       REFRESH_TIMEOUT_MS: "30000"
       REFRESH_RETRY_ATTEMPTS: "3"
       REFRESH_RETRY_BACKOFF_SEC: "30"
+      LLAMA_CATALOG_MAX_STALE_SEC: "14400"
       REFRESH_ALERT_WEBHOOK_URL: ${{ secrets.REFRESH_ALERT_WEBHOOK_URL }}
     steps:
       - name: Checkout repository
@@ -107,6 +108,55 @@ jobs:
             attempt=$((attempt + 1))
           done
 
+      - name: Validate DefiLlama catalog freshness
+        run: |
+          if ! [[ "${LLAMA_CATALOG_MAX_STALE_SEC}" =~ ^[0-9]+$ ]] || [[ "${LLAMA_CATALOG_MAX_STALE_SEC}" -lt 1 ]]; then
+            echo "LLAMA_CATALOG_MAX_STALE_SEC must be a positive integer."
+            exit 1
+          fi
+
+          freshness_sec="$(node - <<'EOF'
+          const baseUrl = process.env.REFRESH_BASE_URL?.replace(/\/$/, "");
+          const maxStaleSec = Number(process.env.LLAMA_CATALOG_MAX_STALE_SEC);
+          const timeoutMs = Number(process.env.REFRESH_TIMEOUT_MS || "30000");
+
+          if (!baseUrl) {
+            throw new Error("REFRESH_BASE_URL is required for catalog freshness validation.");
+          }
+
+          const response = await fetch(`${baseUrl}/api/v1/llama/catalog?chain=Ethereum`, {
+            headers: {
+              accept: "application/json",
+              "user-agent": "aa-refresh-validator/1.0",
+            },
+            cache: "no-store",
+            signal: AbortSignal.timeout(timeoutMs),
+          });
+
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload?.message || `Catalog endpoint returned ${response.status}`);
+          }
+
+          const freshnessSec = Number(payload?.freshnessSec ?? Number.NaN);
+          if (!Number.isFinite(freshnessSec)) {
+            throw new Error("Catalog freshnessSec is missing or invalid.");
+          }
+
+          if (freshnessSec > maxStaleSec) {
+            throw new Error(
+              `Catalog freshness ${freshnessSec}s exceeds allowed threshold ${maxStaleSec}s.`
+            );
+          }
+
+          console.error(`Catalog freshness OK: ${freshnessSec}s <= ${maxStaleSec}s`);
+          process.stdout.write(String(freshnessSec));
+          EOF
+          )"
+
+          echo "LLAMA_CATALOG_FRESHNESS_SEC=${freshness_sec}" >> "$GITHUB_ENV"
+        shell: bash
+
       - name: Build refresh audit artifact
         if: always()
         run: |
@@ -140,7 +190,8 @@ jobs:
             "status": "${final_status}",
             "attemptsUsed": ${attempts_used},
             "maxAttempts": ${max_attempts},
-            "baseUrlConfigured": $(if [[ -n "${REFRESH_BASE_URL}" ]]; then echo true; else echo false; fi)
+            "baseUrlConfigured": $(if [[ -n "${REFRESH_BASE_URL}" ]]; then echo true; else echo false; fi),
+            "llamaCatalogFreshnessSec": ${LLAMA_CATALOG_FRESHNESS_SEC:-null}
           }
           JSON
 
@@ -153,6 +204,7 @@ jobs:
             echo "duration_sec=${duration_sec}"
             echo "started_at=${REFRESH_START_ISO}"
             echo "ended_at=${end_iso}"
+            echo "llama_catalog_freshness_sec=${LLAMA_CATALOG_FRESHNESS_SEC:-unknown}"
             echo "run_url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           } > "${REFRESH_AUDIT_DIR}/metrics.txt"
 
@@ -170,6 +222,7 @@ jobs:
             echo "| Status | ${final_status} |"
             echo "| Attempts Used | ${attempts_used}/${REFRESH_RETRY_ATTEMPTS} |"
             echo "| Started At (UTC) | ${REFRESH_START_ISO} |"
+            echo "| Llama Catalog Freshness (sec) | ${LLAMA_CATALOG_FRESHNESS_SEC:-unknown} |"
             echo "| Run URL | https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} |"
             echo
             echo "Audit files uploaded as workflow artifact: \`refresh-audit-${{ github.run_id }}-${{ github.run_attempt }}\`."
