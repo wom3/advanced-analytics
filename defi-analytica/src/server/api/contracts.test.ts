@@ -208,3 +208,37 @@ test("provider routes emit the shared error envelope on invalid input", async ()
   assert.equal(parsed.code, "COINGECKO_MARKET_FAILED");
   assert.equal(parsed.provider, "coingecko");
 });
+
+test("dashboard routes return documented 400 envelopes for invalid shared query parameters", async () => {
+  const scoreResponse = await getSentimentScore(
+    createApiRequest("/api/v1/sentiment/score?mode=demo&points=12")
+  );
+
+  assert.equal(scoreResponse.status, 400);
+  assert.ok(scoreResponse.headers.get("x-ratelimit-remaining"));
+  assert.ok(scoreResponse.headers.get("x-ratelimit-reset"));
+
+  const scoreBody = await scoreResponse.json();
+  const parsedScore = apiErrorSchema.parse(scoreBody);
+
+  assert.equal(parsedScore.code, "SENTIMENT_SCORE_FAILED");
+  assert.equal(parsedScore.retryable, false);
+  assert.equal(parsedScore.provider, "internal");
+  assert.match(parsedScore.message, /points must be an integer between 24 and 720/i);
+
+  const overviewResponse = await getDashboardOverview(
+    createApiRequest("/api/v1/dashboard/overview?interval=hourly")
+  );
+
+  assert.equal(overviewResponse.status, 400);
+  assert.ok(overviewResponse.headers.get("x-ratelimit-remaining"));
+  assert.ok(overviewResponse.headers.get("x-ratelimit-reset"));
+
+  const overviewBody = await overviewResponse.json();
+  const parsedOverview = apiErrorSchema.parse(overviewBody);
+
+  assert.equal(parsedOverview.code, "DASHBOARD_OVERVIEW_FAILED");
+  assert.equal(parsedOverview.retryable, false);
+  assert.equal(parsedOverview.provider, "internal");
+  assert.match(parsedOverview.message, /interval must match pattern/i);
+});
