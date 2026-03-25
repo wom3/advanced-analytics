@@ -80,3 +80,17 @@ model ApiCacheIndex {
   @@index([expiresAt])
   @@map("api_cache_index")
 }
+
+model ProviderCatalogSnapshot {
+  id         String   @id @default(cuid())
+  provider   String
+  resource   String
+  scope      String
+  payloadJson Json
+  fetchedAt  DateTime @default(now())
+  requestId  String?
+  sourceUrl  String?
+
+  @@index([provider, resource, scope, fetchedAt])
+  @@map("provider_catalog_snapshots")
+}
