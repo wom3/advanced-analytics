@@ -1,10 +1,7 @@
 ---
 name: "Cache And Observability"
 description: "Use when changing Redis HTTP cache logic, cache policy, invalidation scripts, or API logging helpers. Covers cache-key stability, TTL policy alignment, and structured observability patterns."
-applyTo:
-  - "defi-analytica/src/server/cache/**/*.ts"
-  - "defi-analytica/src/server/observability/**/*.ts"
-  - "defi-analytica/scripts/invalidate-cache.mjs"
+applyTo: "defi-analytica/src/server/cache/**/*.ts,defi-analytica/src/server/observability/**/*.ts,defi-analytica/scripts/invalidate-cache.mjs"
 ---
 # Cache And Observability Guidelines
 

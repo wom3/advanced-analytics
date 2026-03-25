@@ -1,9 +1,7 @@
 ---
 name: "App Router Pages And Layouts"
 description: "Use when editing Next.js App Router pages or layouts under app outside API routes. Covers metadata, server-component defaults, and keeping page-level concerns separate from backend route logic."
-applyTo:
-  - "defi-analytica/app/**/page.tsx"
-  - "defi-analytica/app/**/layout.tsx"
+applyTo: "defi-analytica/app/**/page.tsx,defi-analytica/app/**/layout.tsx"
 ---
 # App Router Page Guidelines
 
