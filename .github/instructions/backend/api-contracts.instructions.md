@@ -1,6 +1,6 @@
 ---
 name: "API Contracts And Shared Server Primitives"
-description: "Use when editing shared API primitives such as envelope helpers, rate limiting, or request-id utilities in src/server/api. Covers backward-compatible response contracts and shared header behavior."
+description: "Use when editing shared API primitives such as envelope helpers, rate limiting, or request-id utilities in defi-analytica/src/server/api. Covers backward-compatible response contracts and shared header behavior."
 applyTo: "defi-analytica/src/server/api/**/*.ts"
 ---
 # API Contract Guidelines

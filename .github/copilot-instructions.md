@@ -13,7 +13,7 @@
 
 - Every `/api/v1/*` request passes through `defi-analytica/proxy.ts` to attach `x-request-id` and emit request-received logs.
 - Route handlers follow a consistent sequence: request ID -> rate limit check -> param/query parsing -> adapter call -> envelope response.
-- Rate limiting is per-IP + pathname via `publicRateLimitKey()` and `takeToken()` in `src/server/api/rate-limit.ts`.
+- Rate limiting is per-IP + pathname via `publicRateLimitKey()` and `takeToken()` in `defi-analytica/src/server/api/rate-limit.ts`.
 - Success response contract: `{ source, asOf, freshnessSec, data, meta }`.
 - Error response contract: `{ code, message, retryable, provider }`.
 
@@ -37,11 +37,11 @@
 
 ## Conventions
 
-- Keep route handlers thin; put provider/network logic in adapter modules under `src/server/adapters/**`.
+- Keep route handlers thin; put provider/network logic in adapter modules under `defi-analytica/src/server/adapters/**`.
 - Preserve existing response envelope shapes and headers (`x-request-id`, rate-limit headers) when adding endpoints.
 - Follow existing parsing style: explicit `parse*` helpers for params/query values; return 400 on invalid user input.
-- Use structured logger helpers (`logApiInfo`, `logApiWarn`, `logApiError`) from `src/server/observability/logger.ts`.
-- Reuse path alias imports (`@/*`) and keep TypeScript strictness settings intact (`tsconfig.json`).
+- Use structured logger helpers (`logApiInfo`, `logApiWarn`, `logApiError`) from `defi-analytica/src/server/observability/logger.ts`.
+- Reuse path alias imports (`@/*`) and keep TypeScript strictness settings intact in `defi-analytica/tsconfig.json`.
 
 ## Environment Notes
 

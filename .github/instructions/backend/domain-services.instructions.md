@@ -1,6 +1,6 @@
 ---
 name: "Domain Services"
-description: "Use when modifying internal domain services in src/server/services, including dashboard, feature-engineering, and sentiment-scoring logic. Covers deterministic transformations, composition across adapters, and testability."
+description: "Use when modifying internal domain services in defi-analytica/src/server/services, including dashboard, feature-engineering, and sentiment-scoring logic. Covers deterministic transformations, composition across adapters, and testability."
 applyTo: "defi-analytica/src/server/services/**/*.ts"
 ---
 # Domain Service Guidelines

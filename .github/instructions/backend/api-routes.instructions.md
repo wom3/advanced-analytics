@@ -1,6 +1,6 @@
 ---
 name: "API Route Handlers"
-description: "Use when adding or editing Next.js API route handlers under app/api/v1. Covers request-id flow, rate limiting, parsing, adapter delegation, cache usage, headers, and stable envelope/error behavior."
+description: "Use when adding or editing Next.js API route handlers under defi-analytica/app/api/v1. Covers request-id flow, rate limiting, parsing, adapter delegation, cache usage, headers, and stable envelope/error behavior."
 applyTo: "defi-analytica/app/api/v1/**/route.ts"
 ---
 # API Route Handler Guidelines

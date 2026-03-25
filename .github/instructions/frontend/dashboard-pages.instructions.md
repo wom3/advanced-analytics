@@ -1,6 +1,6 @@
 ---
 name: "Dashboard Pages And Components"
-description: "Use when editing dashboard pages or related components under app/dashboard. Covers server-first data loading, existing visual language, and keeping UI changes aligned with current dashboard patterns."
+description: "Use when editing dashboard pages or related components under defi-analytica/app/dashboard. Covers server-first data loading, existing visual language, and keeping UI changes aligned with current dashboard patterns."
 applyTo: "defi-analytica/app/dashboard/**/*.ts,defi-analytica/app/dashboard/**/*.tsx"
 ---
 # Dashboard UI Guidelines

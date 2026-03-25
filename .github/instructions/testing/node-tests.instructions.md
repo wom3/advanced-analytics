@@ -1,6 +1,6 @@
 ---
 name: "Node Test Style"
-description: "Use when adding or updating unit tests in this repo, especially src/**/*.test.ts files run by tsx with node:test. Covers assertion style, deterministic fixtures, and matching the existing service test patterns."
+description: "Use when adding or updating unit tests in this repo, especially defi-analytica/src/**/*.test.ts files run by tsx with node:test. Covers assertion style, deterministic fixtures, and matching the existing service test patterns."
 applyTo: "defi-analytica/src/**/*.test.ts"
 ---
 # Test Guidelines

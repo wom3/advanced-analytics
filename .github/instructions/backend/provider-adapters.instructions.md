@@ -1,6 +1,6 @@
 ---
 name: "Provider Adapters"
-description: "Use when implementing or refactoring provider adapters in src/server/adapters. Covers fetch behavior, normalization, custom adapter errors, and keeping provider-specific logic out of route handlers."
+description: "Use when implementing or refactoring provider adapters in defi-analytica/src/server/adapters. Covers fetch behavior, normalization, custom adapter errors, and keeping provider-specific logic out of route handlers."
 applyTo: "defi-analytica/src/server/adapters/**/*.ts"
 ---
 # Provider Adapter Guidelines
