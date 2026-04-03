@@ -1,10 +1,22 @@
 # Advanced Analytics
 
-API-first crypto analytics platform that combines:
+See the market before it sees you.
 
-- Dune data for onchain protocol and wallet behavior
-- Free and low-cost market and sentiment sources
-- A modern dashboard stack built with Next.js, Chart.js, and Three.js
+Advanced Analytics is a crypto intelligence platform designed for operators, researchers, and builders who need signal instead of noise. It turns fragmented onchain, market, and sentiment data into one fast, visual, API-first experience so you can track regime shifts, monitor flows, and understand what is moving the market without stitching together five separate tools.
+
+What the app delivers:
+
+- Unified analytics across Dune, DefiLlama, CoinGecko, and Alternative.me
+- Sentiment-aware dashboards that connect price action, flows, and risk regime changes
+- Internal APIs and normalized contracts that make the platform easy to extend
+- A modern Next.js interface with rich charts and immersive market-state visuals
+
+Built for:
+
+- Monitoring crypto market structure in real time
+- Surfacing changes in protocol activity and wallet behavior
+- Combining market data with sentiment signals for faster decision-making
+- Shipping new analytics features on top of a clean adapter and service architecture
 
 ## Current Status
 
@@ -13,6 +25,7 @@ API-first crypto analytics platform that combines:
 - Feature 09 is implemented in `defi-analytica/src/server/services/feature-engineering/service.ts` with time alignment, imputation, rolling z-score normalization, and per-timestamp factor contribution output.
 - Feature 10 is implemented in `defi-analytica/src/server/services/sentiment-scoring/service.ts` with weighted composite scoring, bullish/neutral/bearish labeling, confidence scoring, and validated configurable weights from `defi-analytica/src/server/services/sentiment-scoring/weights.json`.
 - Feature 11 is implemented with `/api/v1/dashboard/overview`, `/api/v1/sentiment/score`, and `/api/v1/sentiment/history`, backed by `defi-analytica/src/server/services/dashboard/service.ts` with provider-status metadata and freshness handling.
+- Frontend entrypoints now include a product landing page at `/` alongside the dashboard and sentiment views.
 - Feature 17 is implemented with adapter unit tests, API contract tests, dashboard overview route integration tests, and Playwright smoke tests for the primary dashboard pages.
 - Product requirements are documented in `requirements.md`.
 - Feature-by-feature implementation plan is tracked in `TODO.md`.

@@ -32,6 +32,12 @@ type ErrorInput = ApiError & {
   requestId?: string;
 };
 
+type RateLimitHeadersInput = {
+  remaining: number;
+  resetEpochSeconds: number;
+  retryAfterSec?: number;
+};
+
 export const REQUEST_ID_HEADER = "x-request-id";
 
 export function successEnvelope<T>(input: SuccessInput<T>): ApiSuccess<T> {
@@ -80,4 +86,18 @@ export function jsonError(input: ErrorInput): NextResponse<ApiError> {
 export function getOrCreateRequestId(headers: Headers): string {
   const existing = headers.get(REQUEST_ID_HEADER);
   return existing && existing.trim().length > 0 ? existing : crypto.randomUUID();
+}
+
+export function applyRateLimitHeaders<T>(
+  response: NextResponse<T>,
+  input: RateLimitHeadersInput
+): NextResponse<T> {
+  response.headers.set("x-ratelimit-remaining", String(input.remaining));
+  response.headers.set("x-ratelimit-reset", String(input.resetEpochSeconds));
+
+  if (input.retryAfterSec !== undefined) {
+    response.headers.set("retry-after", String(input.retryAfterSec));
+  }
+
+  return response;
 }

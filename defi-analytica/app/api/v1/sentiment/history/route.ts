@@ -1,6 +1,15 @@
 import type { NextRequest } from "next/server";
 
-import { getOrCreateRequestId, jsonError, jsonSuccess } from "@/src/server/api/envelope";
+import {
+  applyRateLimitHeaders,
+  getOrCreateRequestId,
+  jsonError,
+  jsonSuccess,
+} from "@/src/server/api/envelope";
+import {
+  AnalyticsQueryParseError,
+  parseAnalyticsQuery,
+} from "@/src/server/api/analytics-query";
 import { publicRateLimitKey, takeToken } from "@/src/server/api/rate-limit";
 import {
   buildHttpCacheKey,
@@ -12,38 +21,7 @@ import { CACHE_TTL_SECONDS } from "@/src/server/cache/policy";
 import { logApiError, logApiInfo, logApiWarn } from "@/src/server/observability/logger";
 import {
   buildDashboardOverview,
-  type SentimentBuildMode,
 } from "@/src/server/services/dashboard/service";
-
-function parseMode(value: string | null): SentimentBuildMode {
-  const normalized = value?.trim().toLowerCase();
-  if (!normalized || normalized === "live") {
-    return "live";
-  }
-  if (normalized === "demo") {
-    return "demo";
-  }
-  throw new Error("mode must be one of: live, demo.");
-}
-
-function parseInterval(value: string | null): string {
-  const normalized = value?.trim().toLowerCase() ?? "1h";
-  if (!/^(\d+)([smhdw])$/.test(normalized)) {
-    throw new Error("interval must match pattern like 1h, 6h, 1d, 7d.");
-  }
-  return normalized;
-}
-
-function parsePoints(value: string | null): number {
-  if (!value) {
-    return 168;
-  }
-  const numeric = Number(value);
-  if (!Number.isInteger(numeric) || numeric < 24 || numeric > 720) {
-    throw new Error("points must be an integer between 24 and 720.");
-  }
-  return numeric;
-}
 
 export async function GET(request: NextRequest) {
   const startedAt = Date.now();
@@ -70,18 +48,18 @@ export async function GET(request: NextRequest) {
       status: 429,
       requestId,
     });
-    response.headers.set("retry-after", String(rl.retryAfterSec));
-    response.headers.set("x-ratelimit-remaining", "0");
-    response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
-    return response;
+    return applyRateLimitHeaders(response, {
+      remaining: 0,
+      resetEpochSeconds,
+      retryAfterSec: rl.retryAfterSec,
+    });
   }
 
   try {
-    const mode = parseMode(request.nextUrl.searchParams.get("mode"));
-    const interval = parseInterval(request.nextUrl.searchParams.get("interval"));
-    const points = parsePoints(request.nextUrl.searchParams.get("points"));
-    const asset = request.nextUrl.searchParams.get("asset")?.trim().toLowerCase() || "bitcoin";
-    const chain = request.nextUrl.searchParams.get("chain")?.trim() || "Ethereum";
+    const { mode, interval, points, asset, chain } = parseAnalyticsQuery(
+      request.nextUrl.searchParams,
+      { defaultPoints: 168 }
+    );
 
     const cacheKey = buildHttpCacheKey(request.nextUrl);
     const cached =
@@ -103,9 +81,10 @@ export async function GET(request: NextRequest) {
         ...cached,
         requestId,
       });
-      response.headers.set("x-ratelimit-remaining", String(rl.remaining));
-      response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
-      return response;
+      return applyRateLimitHeaders(response, {
+        remaining: rl.remaining,
+        resetEpochSeconds,
+      });
     }
 
     const overview = await buildDashboardOverview({
@@ -152,23 +131,23 @@ export async function GET(request: NextRequest) {
       ...payload,
       requestId,
     });
-    response.headers.set("x-ratelimit-remaining", String(rl.remaining));
-    response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
-    return response;
+    return applyRateLimitHeaders(response, {
+      remaining: rl.remaining,
+      resetEpochSeconds,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to compute sentiment history.";
+    const status = error instanceof AnalyticsQueryParseError ? error.status : 500;
 
     logApiError({
       event: "api.sentiment.history.error",
       requestId,
       method: request.method,
       path: request.nextUrl.pathname,
-      status: 500,
+      status,
       durationMs: Date.now() - startedAt,
       message,
     });
-
-    const status = /must/.test(message) ? 400 : 500;
 
     const response = jsonError({
       code: "SENTIMENT_HISTORY_FAILED",
@@ -178,8 +157,9 @@ export async function GET(request: NextRequest) {
       status,
       requestId,
     });
-    response.headers.set("x-ratelimit-remaining", String(rl.remaining));
-    response.headers.set("x-ratelimit-reset", String(resetEpochSeconds));
-    return response;
+    return applyRateLimitHeaders(response, {
+      remaining: rl.remaining,
+      resetEpochSeconds,
+    });
   }
 }
