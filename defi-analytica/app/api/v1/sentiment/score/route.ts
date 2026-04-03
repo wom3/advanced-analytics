@@ -7,9 +7,9 @@ import {
   jsonSuccess,
 } from "@/src/server/api/envelope";
 import {
-  DashboardQueryParseError,
-  parseDashboardQuery,
-} from "@/src/server/api/dashboard-query";
+  AnalyticsQueryParseError,
+  parseAnalyticsQuery,
+} from "@/src/server/api/analytics-query";
 import { publicRateLimitKey, takeToken } from "@/src/server/api/rate-limit";
 import {
   buildHttpCacheKey,
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { mode, interval, points, asset, chain } = parseDashboardQuery(
+    const { mode, interval, points, asset, chain } = parseAnalyticsQuery(
       request.nextUrl.searchParams
     );
 
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to compute sentiment score.";
-    const status = error instanceof DashboardQueryParseError ? error.status : 500;
+    const status = error instanceof AnalyticsQueryParseError ? error.status : 500;
 
     logApiError({
       event: "api.sentiment.score.error",

@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  DashboardQueryParseError,
-  parseDashboardQuery,
-} from "@/src/server/api/dashboard-query";
+  AnalyticsQueryParseError,
+  parseAnalyticsQuery,
+} from "@/src/server/api/analytics-query";
 
-test("parseDashboardQuery supplies documented defaults", () => {
-  const parsed = parseDashboardQuery(new URLSearchParams());
+test("parseAnalyticsQuery supplies documented defaults", () => {
+  const parsed = parseAnalyticsQuery(new URLSearchParams());
 
   assert.deepEqual(parsed, {
     mode: "live",
@@ -18,8 +18,8 @@ test("parseDashboardQuery supplies documented defaults", () => {
   });
 });
 
-test("parseDashboardQuery accepts explicit valid overrides", () => {
-  const parsed = parseDashboardQuery(
+test("parseAnalyticsQuery accepts explicit valid overrides", () => {
+  const parsed = parseAnalyticsQuery(
     new URLSearchParams({
       mode: "demo",
       interval: "6h",
@@ -39,12 +39,12 @@ test("parseDashboardQuery accepts explicit valid overrides", () => {
   });
 });
 
-test("parseDashboardQuery rejects invalid shared query parameters", async (t) => {
+test("parseAnalyticsQuery rejects invalid shared query parameters", async (t) => {
   await t.test("mode", () => {
     assert.throws(
-      () => parseDashboardQuery(new URLSearchParams({ mode: "paper" })),
+      () => parseAnalyticsQuery(new URLSearchParams({ mode: "paper" })),
       (error: unknown) => {
-        assert.ok(error instanceof DashboardQueryParseError);
+        assert.ok(error instanceof AnalyticsQueryParseError);
         assert.match(error.message, /mode must be one of/i);
         return true;
       }
@@ -53,9 +53,9 @@ test("parseDashboardQuery rejects invalid shared query parameters", async (t) =>
 
   await t.test("interval", () => {
     assert.throws(
-      () => parseDashboardQuery(new URLSearchParams({ interval: "hourly" })),
+      () => parseAnalyticsQuery(new URLSearchParams({ interval: "hourly" })),
       (error: unknown) => {
-        assert.ok(error instanceof DashboardQueryParseError);
+        assert.ok(error instanceof AnalyticsQueryParseError);
         assert.match(error.message, /interval must match pattern/i);
         return true;
       }
@@ -64,9 +64,9 @@ test("parseDashboardQuery rejects invalid shared query parameters", async (t) =>
 
   await t.test("points", () => {
     assert.throws(
-      () => parseDashboardQuery(new URLSearchParams({ points: "12" })),
+      () => parseAnalyticsQuery(new URLSearchParams({ points: "12" })),
       (error: unknown) => {
-        assert.ok(error instanceof DashboardQueryParseError);
+        assert.ok(error instanceof AnalyticsQueryParseError);
         assert.match(error.message, /points must be an integer between 24 and 720/i);
         return true;
       }
@@ -75,9 +75,9 @@ test("parseDashboardQuery rejects invalid shared query parameters", async (t) =>
 
   await t.test("asset", () => {
     assert.throws(
-      () => parseDashboardQuery(new URLSearchParams({ asset: "Bitcoin Cash" })),
+      () => parseAnalyticsQuery(new URLSearchParams({ asset: "Bitcoin Cash" })),
       (error: unknown) => {
-        assert.ok(error instanceof DashboardQueryParseError);
+        assert.ok(error instanceof AnalyticsQueryParseError);
         assert.match(error.message, /asset must contain only lowercase letters/i);
         return true;
       }
@@ -86,9 +86,9 @@ test("parseDashboardQuery rejects invalid shared query parameters", async (t) =>
 
   await t.test("chain", () => {
     assert.throws(
-      () => parseDashboardQuery(new URLSearchParams({ chain: "   " })),
+      () => parseAnalyticsQuery(new URLSearchParams({ chain: "   " })),
       (error: unknown) => {
-        assert.ok(error instanceof DashboardQueryParseError);
+        assert.ok(error instanceof AnalyticsQueryParseError);
         assert.match(error.message, /chain must be a non-empty chain name/i);
         return true;
       }

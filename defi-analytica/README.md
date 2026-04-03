@@ -430,7 +430,7 @@ Error envelope:
 - Dashboard aggregation logic for blending provider factors, emitting provider-status metadata, and serving sentiment/dashboard payloads lives in `src/server/services/dashboard/service.ts`.
 - Shared API helpers:
   - `src/server/api/envelope.ts` for success/error JSON contracts and shared response headers
-  - `src/server/api/dashboard-query.ts` for shared dashboard/sentiment query parsing
+  - `src/server/api/analytics-query.ts` for shared dashboard/sentiment query parsing
   - `src/server/api/rate-limit.ts` for in-memory per-IP+path limiting
   - `src/server/observability/logger.ts` for structured API logs
 
