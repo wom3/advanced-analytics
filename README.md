@@ -1,10 +1,22 @@
 # Advanced Analytics
 
-API-first crypto analytics platform that combines:
+See the market before it sees you.
 
-- Dune data for onchain protocol and wallet behavior
-- Free and low-cost market and sentiment sources
-- A modern dashboard stack built with Next.js, Chart.js, and Three.js
+Advanced Analytics is a crypto intelligence platform designed for operators, researchers, and builders who need signal instead of noise. It turns fragmented onchain, market, and sentiment data into one fast, visual, API-first experience so you can track regime shifts, monitor flows, and understand what is moving the market without stitching together five separate tools.
+
+What the app delivers:
+
+- Unified analytics across Dune, DefiLlama, CoinGecko, and Alternative.me
+- Sentiment-aware dashboards that connect price action, flows, and risk regime changes
+- Internal APIs and normalized contracts that make the platform easy to extend
+- A modern Next.js interface with rich charts and immersive market-state visuals
+
+Built for:
+
+- Monitoring crypto market structure in real time
+- Surfacing changes in protocol activity and wallet behavior
+- Combining market data with sentiment signals for faster decision-making
+- Shipping new analytics features on top of a clean adapter and service architecture
 
 ## Current Status
 
