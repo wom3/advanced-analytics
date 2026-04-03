@@ -4,6 +4,8 @@ See the market before it sees you.
 
 Advanced Analytics is a crypto intelligence platform designed for operators, researchers, and builders who need signal instead of noise. It turns fragmented onchain, market, and sentiment data into one fast, visual, API-first experience so you can track regime shifts, monitor flows, and understand what is moving the market without stitching together five separate tools.
 
+Tags: crypto analytics, onchain intelligence, market sentiment, DeFi dashboard, Dune analytics, market structure, API-first platform, real-time monitoring
+
 What the app delivers:
 
 - Unified analytics across Dune, DefiLlama, CoinGecko, and Alternative.me
